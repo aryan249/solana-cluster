@@ -187,3 +187,88 @@ resource "aws_eip" "validators" {
     Environment = var.environment
   }
 }
+
+###############################################################################
+# RPC Node
+###############################################################################
+resource "aws_instance" "rpc" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type_rpc
+  key_name               = aws_key_pair.solana.key_name
+  subnet_id              = var.public_subnet_id
+  vpc_security_group_ids = [var.rpc_sg_id]
+  iam_instance_profile   = aws_iam_instance_profile.solana.name
+
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+  }
+
+  tags = {
+    Name        = "sol-rpc"
+    Role        = "rpc"
+    Environment = var.environment
+  }
+}
+
+resource "aws_ebs_volume" "rpc_ledger" {
+  availability_zone = aws_instance.rpc.availability_zone
+  size              = var.ledger_volume_size
+  type              = "gp3"
+  iops              = var.ledger_volume_iops
+  throughput        = var.ledger_volume_throughput
+
+  tags = {
+    Name        = "sol-rpc-ledger"
+    Environment = var.environment
+  }
+}
+
+resource "aws_volume_attachment" "rpc_ledger" {
+  device_name = "/dev/xvdb"
+  volume_id   = aws_ebs_volume.rpc_ledger.id
+  instance_id = aws_instance.rpc.id
+}
+
+resource "aws_eip" "rpc" {
+  instance = aws_instance.rpc.id
+  domain   = "vpc"
+
+  tags = {
+    Name        = "sol-rpc-eip"
+    Environment = var.environment
+  }
+}
+
+###############################################################################
+# Faucet
+###############################################################################
+resource "aws_instance" "faucet" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type_faucet
+  key_name               = aws_key_pair.solana.key_name
+  subnet_id              = var.private_subnet_id
+  vpc_security_group_ids = [var.faucet_sg_id]
+  iam_instance_profile   = aws_iam_instance_profile.solana.name
+
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+  }
+
+  tags = {
+    Name        = "sol-faucet"
+    Role        = "faucet"
+    Environment = var.environment
+  }
+}
+
+resource "aws_eip" "faucet" {
+  instance = aws_instance.faucet.id
+  domain   = "vpc"
+
+  tags = {
+    Name        = "sol-faucet-eip"
+    Environment = var.environment
+  }
+}
