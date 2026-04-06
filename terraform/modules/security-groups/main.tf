@@ -122,6 +122,23 @@ resource "aws_security_group" "validators" {
     cidr_blocks = ["10.0.0.0/16"]
   }
 
+  # Solana uses ephemeral UDP ports for gossip/repair protocol
+  ingress {
+    description = "Ephemeral UDP ports for Solana protocol within VPC"
+    from_port   = 1024
+    to_port     = 65535
+    protocol    = "udp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
+  ingress {
+    description = "Ephemeral TCP ports for Solana protocol within VPC"
+    from_port   = 1024
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
   ingress {
     description = "RPC port within VPC"
     from_port   = 8899
