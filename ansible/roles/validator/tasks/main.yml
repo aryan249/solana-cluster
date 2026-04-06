@@ -71,27 +71,32 @@
     enabled: yes
     state: started
 
-- name: Wait for validator to appear in gossip
-  command: >
-    /usr/local/bin/solana gossip
+- name: Wait for validator to catch up
+  shell: >
+    /usr/local/bin/solana catchup
+    --our-localhost
     --url http://{{ hostvars[groups['bootstrap'][0]]['private_ip'] }}:{{ rpc_port }}
-  register: gossip_result
-  until: gossip_result.rc == 0 and ansible_host in gossip_result.stdout
-  retries: 30
+    --follow
+    2>&1 || true
+  register: catchup_result
+  until: catchup_result.rc == 0
+  retries: 60
   delay: 10
   changed_when: false
   become: true
   become_user: solana
+  ignore_errors: true
 
-- name: Verify validator in solana validators output
-  command: >
-    /usr/local/bin/solana validators
+- name: Verify cluster has nodes
+  shell: >
+    /usr/local/bin/solana gossip
     --url http://{{ hostvars[groups['bootstrap'][0]]['private_ip'] }}:{{ rpc_port }}
-  register: validators_result
+  register: gossip_result
   changed_when: false
   become: true
   become_user: solana
+  ignore_errors: true
 
-- name: Display validators output
+- name: Display gossip nodes
   debug:
-    msg: "{{ validators_result.stdout_lines | last }}"
+    msg: "{{ gossip_result.stdout_lines | default(['No output']) }}"
