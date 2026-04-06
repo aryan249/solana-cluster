@@ -28,6 +28,31 @@ variable "monitoring_sg_id" {
   type        = string
 }
 
+variable "instance_type_rpc" {
+  description = "Instance type for the RPC node"
+  type        = string
+}
+
+variable "instance_type_faucet" {
+  description = "Instance type for the faucet"
+  type        = string
+}
+
+variable "public_subnet_id" {
+  description = "Public subnet ID"
+  type        = string
+}
+
+variable "rpc_sg_id" {
+  description = "Security group ID for RPC"
+  type        = string
+}
+
+variable "faucet_sg_id" {
+  description = "Security group ID for faucet"
+  type        = string
+}
+
 variable "validator_count" {
   description = "Number of validators (excluding bootstrap)"
   type        = number
