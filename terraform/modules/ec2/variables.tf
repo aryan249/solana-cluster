@@ -27,3 +27,18 @@ variable "monitoring_sg_id" {
   description = "Security group ID for monitoring"
   type        = string
 }
+
+variable "ledger_volume_size" {
+  description = "EBS volume size in GB for ledger"
+  type        = number
+}
+
+variable "ledger_volume_iops" {
+  description = "Provisioned IOPS for ledger EBS"
+  type        = number
+}
+
+variable "ledger_volume_throughput" {
+  description = "Throughput in MB/s for ledger EBS"
+  type        = number
+}

@@ -79,3 +79,55 @@ resource "aws_iam_instance_profile" "solana" {
     Environment = var.environment
   }
 }
+
+###############################################################################
+# Bootstrap Validator
+###############################################################################
+resource "aws_instance" "bootstrap" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type_validator
+  key_name               = aws_key_pair.solana.key_name
+  subnet_id              = var.private_subnet_id
+  vpc_security_group_ids = [var.validators_sg_id, var.monitoring_sg_id]
+  iam_instance_profile   = aws_iam_instance_profile.solana.name
+
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+  }
+
+  tags = {
+    Name        = "sol-bootstrap"
+    Role        = "bootstrap"
+    Environment = var.environment
+  }
+}
+
+resource "aws_ebs_volume" "bootstrap_ledger" {
+  availability_zone = aws_instance.bootstrap.availability_zone
+  size              = var.ledger_volume_size
+  type              = "gp3"
+  iops              = var.ledger_volume_iops
+  throughput        = var.ledger_volume_throughput
+
+  tags = {
+    Name        = "sol-bootstrap-ledger"
+    Environment = var.environment
+  }
+}
+
+resource "aws_volume_attachment" "bootstrap_ledger" {
+  device_name = "/dev/xvdb"
+  volume_id   = aws_ebs_volume.bootstrap_ledger.id
+  instance_id = aws_instance.bootstrap.id
+}
+
+resource "aws_eip" "bootstrap" {
+  instance = aws_instance.bootstrap.id
+  domain   = "vpc"
+
+  tags = {
+    Name        = "sol-bootstrap-eip"
+    Environment = var.environment
+  }
+}
