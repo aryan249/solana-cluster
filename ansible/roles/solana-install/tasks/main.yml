@@ -7,27 +7,29 @@
   become: true
   become_user: solana
 
-- name: Download Solana install script
-  shell: curl -sSfL https://release.solana.com/v{{ solana_version }}/install -o /tmp/solana-install.sh && chmod 755 /tmp/solana-install.sh
+- name: Download Solana release tarball
+  shell: |
+    cd /tmp
+    wget -q https://github.com/solana-labs/solana/releases/download/v{{ solana_version }}/solana-release-x86_64-unknown-linux-gnu.tar.bz2 -O solana-release.tar.bz2
   args:
-    creates: /tmp/solana-install.sh
+    creates: /tmp/solana-release.tar.bz2
   register: download_result
   retries: 3
-  delay: 10
+  delay: 15
   until: download_result.rc == 0
   when: solana_version_check.rc != 0 or solana_version not in (solana_version_check.stdout | default(''))
 
-- name: Install Solana v{{ solana_version }}
-  command: /tmp/solana-install.sh v{{ solana_version }}
-  become: true
-  become_user: solana
-  environment:
-    PATH: "/home/solana/.local/share/solana/install/active_release/bin:{{ ansible_env.PATH }}"
+- name: Extract Solana release
+  unarchive:
+    src: /tmp/solana-release.tar.bz2
+    dest: /opt/
+    remote_src: yes
+    creates: /opt/solana-release/bin/solana
   when: solana_version_check.rc != 0 or solana_version not in (solana_version_check.stdout | default(''))
 
 - name: Create symlinks for Solana binaries in /usr/local/bin
   file:
-    src: "/home/solana/.local/share/solana/install/active_release/bin/{{ item }}"
+    src: "/opt/solana-release/bin/{{ item }}"
     dest: "/usr/local/bin/{{ item }}"
     state: link
     force: yes
