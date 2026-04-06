@@ -34,13 +34,19 @@ jobs:
           terraform_version: 1.7.0
           terraform_wrapper: false
 
+      - name: Bootstrap Terraform Backend (S3 + DynamoDB)
+        working-directory: terraform/bootstrap-backend
+        run: |
+          terraform init -input=false
+          terraform apply -auto-approve -input=false
+
       - name: Terraform Init
         working-directory: terraform
         run: terraform init -input=false
 
       - name: Terraform Plan
         working-directory: terraform
-        run: terraform plan -out=tfplan -input=false
+        run: terraform plan -out=tfplan -input=false -var="your_ip=0.0.0.0/0"
 
       - name: Terraform Apply
         working-directory: terraform
