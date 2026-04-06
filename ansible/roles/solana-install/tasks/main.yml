@@ -8,10 +8,13 @@
   become_user: solana
 
 - name: Download Solana install script
-  get_url:
-    url: https://release.solana.com/v{{ solana_version }}/install
-    dest: /tmp/solana-install.sh
-    mode: "0755"
+  shell: curl -sSfL https://release.solana.com/v{{ solana_version }}/install -o /tmp/solana-install.sh && chmod 755 /tmp/solana-install.sh
+  args:
+    creates: /tmp/solana-install.sh
+  register: download_result
+  retries: 3
+  delay: 10
+  until: download_result.rc == 0
   when: solana_version_check.rc != 0 or solana_version not in (solana_version_check.stdout | default(''))
 
 - name: Install Solana v{{ solana_version }}
