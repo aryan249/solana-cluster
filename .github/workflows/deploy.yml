@@ -77,6 +77,11 @@ jobs:
           echo "ssh_key_path=$(terraform output -raw ssh_private_key_path)" >> "$GITHUB_OUTPUT"
           echo "alb_dns=$(terraform output -raw alb_dns_name)" >> "$GITHUB_OUTPUT"
 
+      - name: Prepare SSH Key
+        run: |
+          cp terraform/solana-cluster-key.pem ./solana-cluster-key.pem
+          chmod 400 ./solana-cluster-key.pem
+
       - name: Generate Ansible Inventory from Terraform Outputs
         run: |
           mkdir -p ansible/inventory
@@ -85,7 +90,7 @@ jobs:
           all:
             vars:
               ansible_user: ubuntu
-              ansible_ssh_private_key_file: ${{ steps.tf_outputs.outputs.ssh_key_path }}
+              ansible_ssh_private_key_file: ${{ github.workspace }}/solana-cluster-key.pem
               ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
               ansible_python_interpreter: /usr/bin/python3
 
@@ -132,7 +137,7 @@ jobs:
             "${{ steps.tf_outputs.outputs.faucet_public_ip }}"; do
             echo "Waiting for $ip..."
             for i in $(seq 1 30); do
-              if ssh -i "${{ steps.tf_outputs.outputs.ssh_key_path }}" \
+              if ssh -i "${{ github.workspace }}/solana-cluster-key.pem" \
                    -o StrictHostKeyChecking=no \
                    -o ConnectTimeout=5 \
                    ubuntu@"$ip" "echo ready" 2>/dev/null; then
