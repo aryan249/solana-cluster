@@ -1,7 +1,8 @@
 # {{ ansible_managed }}
 [Unit]
 Description=Solana Validator
-After=network.target
+After=network-online.target
+Wants=network-online.target
 StartLimitIntervalSec=0
 
 [Service]
@@ -29,7 +30,6 @@ LimitNOFILE=1000000
 LimitNPROC=65535
 TimeoutStopSec=60
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
-Environment="SOLANA_METRICS_CONFIG="
 
 [Install]
 WantedBy=multi-user.target

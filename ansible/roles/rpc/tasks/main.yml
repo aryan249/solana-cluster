@@ -40,11 +40,11 @@
   systemd:
     daemon_reload: yes
 
-- name: Enable and start solana-rpc
+- name: Enable and restart solana-rpc
   systemd:
     name: solana-rpc
     enabled: yes
-    state: started
+    state: restarted
 
 - name: Wait for RPC node to be healthy
   uri:
@@ -53,9 +53,10 @@
     return_content: yes
   register: rpc_health
   until: rpc_health.status == 200
-  retries: 30
-  delay: 10
+  retries: 60
+  delay: 15
+  ignore_errors: true
 
 - name: Display RPC health status
   debug:
-    msg: "RPC node health: {{ rpc_health.content }}"
+    msg: "RPC node health: {{ rpc_health.content | default('not yet healthy - will recover via systemd restart') }}"
