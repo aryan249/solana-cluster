@@ -131,3 +131,59 @@ resource "aws_eip" "bootstrap" {
     Environment = var.environment
   }
 }
+
+###############################################################################
+# Validators
+###############################################################################
+resource "aws_instance" "validators" {
+  count                  = var.validator_count
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type_validator
+  key_name               = aws_key_pair.solana.key_name
+  subnet_id              = var.private_subnet_id
+  vpc_security_group_ids = [var.validators_sg_id]
+  iam_instance_profile   = aws_iam_instance_profile.solana.name
+
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+  }
+
+  tags = {
+    Name        = "sol-validator-${count.index + 1}"
+    Role        = "validator"
+    Environment = var.environment
+  }
+}
+
+resource "aws_ebs_volume" "validator_ledger" {
+  count             = var.validator_count
+  availability_zone = aws_instance.validators[count.index].availability_zone
+  size              = var.ledger_volume_size
+  type              = "gp3"
+  iops              = var.ledger_volume_iops
+  throughput        = var.ledger_volume_throughput
+
+  tags = {
+    Name        = "sol-validator-${count.index + 1}-ledger"
+    Environment = var.environment
+  }
+}
+
+resource "aws_volume_attachment" "validator_ledger" {
+  count       = var.validator_count
+  device_name = "/dev/xvdb"
+  volume_id   = aws_ebs_volume.validator_ledger[count.index].id
+  instance_id = aws_instance.validators[count.index].id
+}
+
+resource "aws_eip" "validators" {
+  count    = var.validator_count
+  instance = aws_instance.validators[count.index].id
+  domain   = "vpc"
+
+  tags = {
+    Name        = "sol-validator-${count.index + 1}-eip"
+    Environment = var.environment
+  }
+}

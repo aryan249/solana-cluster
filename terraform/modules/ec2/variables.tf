@@ -28,6 +28,11 @@ variable "monitoring_sg_id" {
   type        = string
 }
 
+variable "validator_count" {
+  description = "Number of validators (excluding bootstrap)"
+  type        = number
+}
+
 variable "ledger_volume_size" {
   description = "EBS volume size in GB for ledger"
   type        = number
