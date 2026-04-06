@@ -74,7 +74,7 @@
 - name: Wait for validator to appear in gossip
   command: >
     /usr/local/bin/solana gossip
-    --url http://{{ hostvars[groups['bootstrap'][0]]['private_ip'] }}:{{ rpc_port }}
+    --url http://{{ hostvars[groups['bootstrap'][0]]['ansible_host'] }}:{{ rpc_port }}
   register: gossip_result
   until: gossip_result.rc == 0 and ansible_host in gossip_result.stdout
   retries: 30
@@ -86,7 +86,7 @@
 - name: Verify validator in solana validators output
   command: >
     /usr/local/bin/solana validators
-    --url http://{{ hostvars[groups['bootstrap'][0]]['private_ip'] }}:{{ rpc_port }}
+    --url http://{{ hostvars[groups['bootstrap'][0]]['ansible_host'] }}:{{ rpc_port }}
   register: validators_result
   changed_when: false
   become: true
