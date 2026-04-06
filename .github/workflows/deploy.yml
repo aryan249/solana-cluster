@@ -37,7 +37,10 @@ jobs:
       - name: Install Ansible
         run: |
           pip3 install ansible --break-system-packages 2>/dev/null || pip3 install ansible
-          ansible --version
+          echo "$HOME/Library/Python/3.9/bin" >> $GITHUB_PATH
+
+      - name: Verify Ansible
+        run: ansible --version
 
       - name: Bootstrap Terraform Backend (S3 + DynamoDB)
         working-directory: terraform/bootstrap-backend
