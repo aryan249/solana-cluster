@@ -87,7 +87,7 @@ resource "aws_instance" "bootstrap" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type_validator
   key_name               = aws_key_pair.solana.key_name
-  subnet_id              = var.private_subnet_id
+  subnet_id              = var.public_subnet_id
   vpc_security_group_ids = [var.validators_sg_id, var.monitoring_sg_id]
   iam_instance_profile   = aws_iam_instance_profile.solana.name
 
@@ -140,7 +140,7 @@ resource "aws_instance" "validators" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type_validator
   key_name               = aws_key_pair.solana.key_name
-  subnet_id              = var.private_subnet_id
+  subnet_id              = var.public_subnet_id
   vpc_security_group_ids = [var.validators_sg_id]
   iam_instance_profile   = aws_iam_instance_profile.solana.name
 
@@ -247,7 +247,7 @@ resource "aws_instance" "faucet" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type_faucet
   key_name               = aws_key_pair.solana.key_name
-  subnet_id              = var.private_subnet_id
+  subnet_id              = var.public_subnet_id
   vpc_security_group_ids = [var.faucet_sg_id]
   iam_instance_profile   = aws_iam_instance_profile.solana.name
 
