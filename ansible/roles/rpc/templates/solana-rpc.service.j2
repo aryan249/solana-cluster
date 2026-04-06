@@ -15,12 +15,12 @@ ExecStart=/usr/local/bin/solana-validator \
   --rpc-port {{ rpc_port }} \
   --gossip-port {{ gossip_port }} \
   --dynamic-port-range 8000-8020 \
-  --entrypoint {{ hostvars[groups['bootstrap'][0]]['ansible_host'] }}:{{ gossip_port }} \
+  --entrypoint {{ hostvars[groups['bootstrap'][0]]['private_ip'] }}:{{ gossip_port }} \
   --known-validator {{ bootstrap_identity_pubkey }} \
   --expected-genesis-hash {{ genesis_hash }} \
   --limit-ledger-size 50000000 \
   --log {{ log_path }}/validator.log \
-  --gossip-host {{ ansible_host }} \
+  --gossip-host {{ private_ip }} \
   --no-port-check \
   --enable-rpc-transaction-history \
   --enable-extended-tx-metadata-storage \
