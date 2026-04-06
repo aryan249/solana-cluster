@@ -17,10 +17,8 @@ ExecStart=/usr/local/bin/solana-validator \
   --dynamic-port-range 8000-8020 \
   --limit-ledger-size 50000000 \
   --log {{ log_path }}/validator.log \
-  --metrics-port {{ metrics_port }} \
   --gossip-host {{ ansible_host }} \
   --no-port-check \
-  --rpc-faucet-address {{ hostvars[groups['faucet'][0]]['private_ip'] }}:9900 \
   --no-wait-for-vote-to-start-leader \
   --enable-rpc-transaction-history
 Restart=always
@@ -29,6 +27,7 @@ LimitNOFILE=1000000
 LimitNPROC=65535
 TimeoutStopSec=60
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="SOLANA_METRICS_CONFIG=host=http://127.0.0.1:{{ metrics_port }}"
 
 [Install]
 WantedBy=multi-user.target

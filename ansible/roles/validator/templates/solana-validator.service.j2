@@ -20,7 +20,6 @@ ExecStart=/usr/local/bin/solana-validator \
   --expected-genesis-hash {{ genesis_hash }} \
   --limit-ledger-size 50000000 \
   --log {{ log_path }}/validator.log \
-  --metrics-port {{ metrics_port }} \
   --gossip-host {{ ansible_host }} \
   --no-port-check
 Restart=always
@@ -30,6 +29,7 @@ LimitNOFILE=1000000
 LimitNPROC=65535
 TimeoutStopSec=60
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="SOLANA_METRICS_CONFIG=host=http://127.0.0.1:{{ metrics_port }}"
 
 [Install]
 WantedBy=multi-user.target
