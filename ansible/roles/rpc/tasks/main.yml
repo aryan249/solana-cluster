@@ -28,6 +28,23 @@
   become: true
   become_user: solana
 
+- name: Stop solana-rpc if running
+  systemd:
+    name: solana-rpc
+    state: stopped
+  ignore_errors: true
+
+- name: Clean RPC ledger for fresh sync
+  file:
+    path: "{{ ledger_path }}/{{ item }}"
+    state: absent
+  loop:
+    - accounts
+    - accounts_hash_cache
+    - rocksdb
+    - snapshot
+  ignore_errors: true
+
 - name: Deploy RPC node systemd service
   template:
     src: solana-rpc.service.j2
@@ -40,11 +57,27 @@
   systemd:
     daemon_reload: yes
 
-- name: Enable and restart solana-rpc
-  systemd:
-    name: solana-rpc
-    enabled: yes
-    state: restarted
+- name: Start solana-rpc via shell to capture output
+  shell: |
+    systemctl enable solana-rpc
+    systemctl start solana-rpc
+    sleep 5
+    if systemctl is-active solana-rpc; then
+      echo "RPC service is running"
+    else
+      echo "RPC failed to start, checking log..."
+      tail -20 /var/log/solana/validator.log
+      echo "Retrying start..."
+      rm -rf /ledger/*
+      systemctl restart solana-rpc
+      sleep 10
+      systemctl is-active solana-rpc && echo "RPC started on retry" || echo "RPC still failing"
+    fi
+  register: rpc_start_result
+
+- name: Display RPC start result
+  debug:
+    msg: "{{ rpc_start_result.stdout_lines }}"
 
 - name: Wait for RPC node to be healthy
   uri:
