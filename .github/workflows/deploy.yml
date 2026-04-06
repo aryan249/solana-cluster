@@ -34,6 +34,11 @@ jobs:
           terraform_version: 1.7.0
           terraform_wrapper: false
 
+      - name: Install Ansible
+        run: |
+          pip3 install ansible --break-system-packages 2>/dev/null || pip3 install ansible
+          ansible --version
+
       - name: Bootstrap Terraform Backend (S3 + DynamoDB)
         working-directory: terraform/bootstrap-backend
         run: |
