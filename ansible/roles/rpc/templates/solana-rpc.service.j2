@@ -25,8 +25,7 @@ ExecStart=/usr/local/bin/solana-validator \
   --enable-rpc-transaction-history \
   --enable-extended-tx-metadata-storage \
   --full-rpc-api \
-  --rpc-bind-address 0.0.0.0 \
-  --rpc-faucet-address {{ hostvars[groups['faucet'][0]]['private_ip'] }}:9900
+  --rpc-bind-address 0.0.0.0
 Restart=always
 RestartSec=10
 StartLimitIntervalSec=0
