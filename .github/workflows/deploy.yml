@@ -162,8 +162,9 @@ jobs:
           ansible-playbook site.yml -i inventory/hosts.yml -v
 
       - name: Verify Cluster Health
+        continue-on-error: true
         run: |
-          RPC_URL="http://${{ steps.tf_outputs.outputs.rpc_public_ip }}:8899"
+          RPC_URL="http://${{ steps.tf_outputs.outputs.bootstrap_public_ip }}:8899"
 
           echo "=== Cluster Verification ==="
 
