@@ -1,0 +1,11 @@
+region                  = "ap-south-1"
+your_ip                 = "YOUR_PUBLIC_IP/32"
+instance_type_validator = "t3.medium"
+instance_type_rpc       = "t3.medium"
+instance_type_faucet    = "t2.micro"
+ledger_volume_size      = 100
+ledger_volume_iops      = 3000
+ledger_volume_throughput = 125
+environment             = "private-testnet"
+key_pair_name           = "solana-cluster-key"
+validator_count         = 3
