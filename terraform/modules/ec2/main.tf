@@ -272,3 +272,60 @@ resource "aws_eip" "faucet" {
     Environment = var.environment
   }
 }
+
+###############################################################################
+# Application Load Balancer
+###############################################################################
+resource "aws_lb" "rpc" {
+  name               = "solana-rpc-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [var.alb_sg_id]
+  subnets            = [var.public_subnet_id, var.public_subnet_id_b]
+
+  tags = {
+    Name        = "solana-rpc-alb"
+    Environment = var.environment
+  }
+}
+
+resource "aws_lb_target_group" "rpc" {
+  name     = "solana-rpc-tg"
+  port     = 8899
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 10
+    path                = "/health"
+    port                = "8899"
+    protocol            = "HTTP"
+    matcher             = "200"
+  }
+
+  tags = {
+    Name        = "solana-rpc-tg"
+    Environment = var.environment
+  }
+}
+
+resource "aws_lb_target_group_attachment" "rpc" {
+  target_group_arn = aws_lb_target_group.rpc.arn
+  target_id        = aws_instance.rpc.id
+  port             = 8899
+}
+
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.rpc.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.rpc.arn
+  }
+}

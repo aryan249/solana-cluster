@@ -72,3 +72,23 @@ variable "ledger_volume_throughput" {
   description = "Throughput in MB/s for ledger EBS"
   type        = number
 }
+
+variable "region" {
+  description = "AWS region"
+  type        = string
+}
+
+variable "alb_sg_id" {
+  description = "Security group ID for ALB"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "VPC ID"
+  type        = string
+}
+
+variable "public_subnet_id_b" {
+  description = "Second public subnet ID (different AZ, required for ALB)"
+  type        = string
+}
