@@ -105,6 +105,31 @@ resource "aws_security_group" "validators" {
     cidr_blocks = [var.your_ip]
   }
 
+  # All Solana ports within VPC (gossip, TPU, TVU, RPC, dynamic range)
+  ingress {
+    description = "All Solana ports within VPC TCP"
+    from_port   = 8000
+    to_port     = 8020
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
+  ingress {
+    description = "All Solana ports within VPC UDP"
+    from_port   = 8000
+    to_port     = 8020
+    protocol    = "udp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
+  ingress {
+    description = "RPC port within VPC"
+    from_port   = 8899
+    to_port     = 8900
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
   # Prometheus scrape from monitoring
   ingress {
     description     = "Prometheus metrics scrape"
@@ -112,6 +137,14 @@ resource "aws_security_group" "validators" {
     to_port         = 9900
     protocol        = "tcp"
     security_groups = [aws_security_group.monitoring.id]
+  }
+
+  ingress {
+    description = "Metrics port within VPC"
+    from_port   = 9900
+    to_port     = 9900
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
   }
 
   egress {
