@@ -82,21 +82,20 @@
   register: genesis_bin
 
 - name: Run solana-genesis
-  command: >
+  shell: >
     /usr/local/bin/solana-genesis
     --cluster-type development
     --ledger {{ ledger_path }}
-    --identity {{ keypair_path }}/identity.json
-    --vote-account {{ keypair_path }}/vote-account.json
-    --stake-account {{ keypair_path }}/stake-account.json
+    --bootstrap-validator
+    {{ keypair_path }}/identity.json
+    {{ keypair_path }}/vote-account.json
+    {{ keypair_path }}/stake-account.json
     --faucet-pubkey {{ faucet_pubkey_result.stdout }}
     --faucet-lamports {{ genesis_lamports }}
     --slots-per-epoch {{ slots_per_epoch }}
     --ticks-per-slot {{ ticks_per_slot }}
     --target-tick-duration {{ target_tick_duration }}
     --hashes-per-tick auto
-    --bootstrap-validator-lamports {{ validator_stake_lamports }}
-    --bootstrap-validator-stake-lamports {{ validator_stake_lamports }}
     --max-genesis-archive-unpacked-size 1073741824
   become: true
   become_user: solana
