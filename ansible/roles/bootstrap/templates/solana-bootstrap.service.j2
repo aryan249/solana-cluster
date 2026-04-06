@@ -20,14 +20,14 @@ ExecStart=/usr/local/bin/solana-validator \
   --gossip-host {{ private_ip }} \
   --no-port-check \
   --no-wait-for-vote-to-start-leader \
-  --enable-rpc-transaction-history
+  --enable-rpc-transaction-history \
+  --full-rpc-api
 Restart=always
 RestartSec=10
 LimitNOFILE=1000000
 LimitNPROC=65535
 TimeoutStopSec=60
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
-Environment="SOLANA_METRICS_CONFIG="
 
 [Install]
 WantedBy=multi-user.target

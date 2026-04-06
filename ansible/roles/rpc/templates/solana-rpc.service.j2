@@ -24,6 +24,7 @@ ExecStart=/usr/local/bin/solana-validator \
   --no-port-check \
   --enable-rpc-transaction-history \
   --enable-extended-tx-metadata-storage \
+  --full-rpc-api \
   --rpc-bind-address 0.0.0.0 \
   --rpc-faucet-address {{ hostvars[groups['faucet'][0]]['private_ip'] }}:9900
 Restart=always
@@ -33,7 +34,6 @@ LimitNOFILE=1000000
 LimitNPROC=65535
 TimeoutStopSec=60
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
-Environment="SOLANA_METRICS_CONFIG="
 
 [Install]
 WantedBy=multi-user.target
