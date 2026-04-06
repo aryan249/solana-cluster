@@ -101,8 +101,36 @@
   become_user: solana
   when: not genesis_bin.stat.exists
 
-- name: Extract genesis hash
-  command: /usr/local/bin/solana genesis-hash --ledger {{ ledger_path }}
+- name: Deploy bootstrap validator systemd service
+  template:
+    src: solana-bootstrap.service.j2
+    dest: /etc/systemd/system/solana-bootstrap.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload systemd daemon for bootstrap
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start bootstrap validator
+  systemd:
+    name: solana-bootstrap
+    enabled: yes
+    state: started
+
+- name: Wait for bootstrap validator RPC to be ready
+  shell: /usr/local/bin/solana cluster-version --url http://127.0.0.1:{{ rpc_port }}
+  register: bootstrap_ready
+  until: bootstrap_ready.rc == 0
+  retries: 30
+  delay: 10
+  changed_when: false
+  become: true
+  become_user: solana
+
+- name: Extract genesis hash via RPC
+  shell: /usr/local/bin/solana genesis-hash --url http://127.0.0.1:{{ rpc_port }}
   register: genesis_hash_result
   changed_when: false
   become: true
@@ -127,34 +155,6 @@
     owner: solana
     group: solana
     mode: "0644"
-
-- name: Deploy bootstrap validator systemd service
-  template:
-    src: solana-bootstrap.service.j2
-    dest: /etc/systemd/system/solana-bootstrap.service
-    owner: root
-    group: root
-    mode: "0644"
-
-- name: Reload systemd daemon
-  systemd:
-    daemon_reload: yes
-
-- name: Enable and start bootstrap validator
-  systemd:
-    name: solana-bootstrap
-    enabled: yes
-    state: started
-
-- name: Wait for bootstrap validator to be healthy
-  command: /usr/local/bin/solana gossip --url http://127.0.0.1:{{ rpc_port }}
-  register: gossip_result
-  until: gossip_result.rc == 0
-  retries: 30
-  delay: 10
-  changed_when: false
-  become: true
-  become_user: solana
 
 - name: Set Solana CLI config to local bootstrap
   command: /usr/local/bin/solana config set --url http://127.0.0.1:{{ rpc_port }} --keypair {{ keypair_path }}/identity.json
