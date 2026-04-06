@@ -1,0 +1,177 @@
+name: Deploy Solana Private Cluster
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-south-1
+  TF_VAR_your_ip: ${{ secrets.DEPLOYER_IP }}
+  ANSIBLE_HOST_KEY_CHECKING: "False"
+
+jobs:
+  deploy:
+    name: Provision and Deploy Cluster
+    runs-on: self-hosted
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        working-directory: terraform
+        run: terraform plan -out=tfplan -input=false
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve -input=false tfplan
+
+      - name: Extract Terraform Outputs
+        id: tf_outputs
+        working-directory: terraform
+        run: |
+          echo "bootstrap_public_ip=$(terraform output -raw bootstrap_public_ip)" >> "$GITHUB_OUTPUT"
+          echo "bootstrap_private_ip=$(terraform output -raw bootstrap_private_ip)" >> "$GITHUB_OUTPUT"
+          echo "validator_1_public_ip=$(terraform output -raw validator_1_public_ip)" >> "$GITHUB_OUTPUT"
+          echo "validator_1_private_ip=$(terraform output -raw validator_1_private_ip)" >> "$GITHUB_OUTPUT"
+          echo "validator_2_public_ip=$(terraform output -raw validator_2_public_ip)" >> "$GITHUB_OUTPUT"
+          echo "validator_2_private_ip=$(terraform output -raw validator_2_private_ip)" >> "$GITHUB_OUTPUT"
+          echo "validator_3_public_ip=$(terraform output -raw validator_3_public_ip)" >> "$GITHUB_OUTPUT"
+          echo "validator_3_private_ip=$(terraform output -raw validator_3_private_ip)" >> "$GITHUB_OUTPUT"
+          echo "rpc_public_ip=$(terraform output -raw rpc_public_ip)" >> "$GITHUB_OUTPUT"
+          echo "rpc_private_ip=$(terraform output -raw rpc_private_ip)" >> "$GITHUB_OUTPUT"
+          echo "faucet_public_ip=$(terraform output -raw faucet_public_ip)" >> "$GITHUB_OUTPUT"
+          echo "faucet_private_ip=$(terraform output -raw faucet_private_ip)" >> "$GITHUB_OUTPUT"
+          echo "ssh_key_path=$(terraform output -raw ssh_private_key_path)" >> "$GITHUB_OUTPUT"
+          echo "alb_dns=$(terraform output -raw alb_dns_name)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Ansible Inventory from Terraform Outputs
+        run: |
+          cat > ansible/inventory/hosts.yml << INVENTORY
+          ---
+          all:
+            vars:
+              ansible_user: ubuntu
+              ansible_ssh_private_key_file: ${{ steps.tf_outputs.outputs.ssh_key_path }}
+              ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+              ansible_python_interpreter: /usr/bin/python3
+
+            children:
+              bootstrap:
+                hosts:
+                  sol-bootstrap:
+                    ansible_host: ${{ steps.tf_outputs.outputs.bootstrap_public_ip }}
+                    private_ip: ${{ steps.tf_outputs.outputs.bootstrap_private_ip }}
+
+              validators:
+                hosts:
+                  sol-validator-1:
+                    ansible_host: ${{ steps.tf_outputs.outputs.validator_1_public_ip }}
+                    private_ip: ${{ steps.tf_outputs.outputs.validator_1_private_ip }}
+                  sol-validator-2:
+                    ansible_host: ${{ steps.tf_outputs.outputs.validator_2_public_ip }}
+                    private_ip: ${{ steps.tf_outputs.outputs.validator_2_private_ip }}
+                  sol-validator-3:
+                    ansible_host: ${{ steps.tf_outputs.outputs.validator_3_public_ip }}
+                    private_ip: ${{ steps.tf_outputs.outputs.validator_3_private_ip }}
+
+              rpc:
+                hosts:
+                  sol-rpc:
+                    ansible_host: ${{ steps.tf_outputs.outputs.rpc_public_ip }}
+                    private_ip: ${{ steps.tf_outputs.outputs.rpc_private_ip }}
+
+              faucet:
+                hosts:
+                  sol-faucet:
+                    ansible_host: ${{ steps.tf_outputs.outputs.faucet_public_ip }}
+                    private_ip: ${{ steps.tf_outputs.outputs.faucet_private_ip }}
+          INVENTORY
+
+      - name: Wait for instances to be reachable
+        run: |
+          for ip in \
+            "${{ steps.tf_outputs.outputs.bootstrap_public_ip }}" \
+            "${{ steps.tf_outputs.outputs.validator_1_public_ip }}" \
+            "${{ steps.tf_outputs.outputs.validator_2_public_ip }}" \
+            "${{ steps.tf_outputs.outputs.validator_3_public_ip }}" \
+            "${{ steps.tf_outputs.outputs.rpc_public_ip }}" \
+            "${{ steps.tf_outputs.outputs.faucet_public_ip }}"; do
+            echo "Waiting for $ip..."
+            for i in $(seq 1 30); do
+              if ssh -i "${{ steps.tf_outputs.outputs.ssh_key_path }}" \
+                   -o StrictHostKeyChecking=no \
+                   -o ConnectTimeout=5 \
+                   ubuntu@"$ip" "echo ready" 2>/dev/null; then
+                echo "$ip is reachable"
+                break
+              fi
+              sleep 10
+            done
+          done
+
+      - name: Run Ansible Playbook
+        working-directory: ansible
+        run: |
+          ansible-playbook site.yml -i inventory/hosts.yml -v
+
+      - name: Verify Cluster Health
+        run: |
+          RPC_URL="http://${{ steps.tf_outputs.outputs.rpc_public_ip }}:8899"
+
+          echo "=== Cluster Verification ==="
+
+          echo "--- RPC Health ---"
+          curl -s "$RPC_URL/health"
+          echo ""
+
+          echo "--- Solana Version ---"
+          curl -s -X POST "$RPC_URL" \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getVersion"}' | python3 -m json.tool
+
+          echo "--- Slot Height ---"
+          curl -s -X POST "$RPC_URL" \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getSlot"}' | python3 -m json.tool
+
+          echo "--- Validators ---"
+          curl -s -X POST "$RPC_URL" \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getVoteAccounts"}' | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          current = data.get('result', {}).get('current', [])
+          delinquent = data.get('result', {}).get('delinquent', [])
+          print(f'Active validators: {len(current)}')
+          print(f'Delinquent validators: {len(delinquent)}')
+          for v in current:
+              print(f'  {v[\"nodePubkey\"][:16]}... stake={v[\"activatedStake\"]} lastVote={v[\"lastVote\"]}')
+          "
+
+          echo ""
+          echo "--- ALB Health ---"
+          curl -s "http://${{ steps.tf_outputs.outputs.alb_dns }}:8899/health" || echo "ALB not yet routing"
+
+          echo ""
+          echo "=== Deployment Complete ==="
