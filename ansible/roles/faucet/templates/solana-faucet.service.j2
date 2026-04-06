@@ -1,0 +1,21 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Solana Faucet
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=solana
+Group=solana
+ExecStart=/usr/local/bin/solana-faucet \
+  --keypair /home/solana/keypairs/faucet-keypair.json
+Restart=always
+RestartSec=10
+LimitNOFILE=1000000
+LimitNPROC=65535
+TimeoutStopSec=30
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+
+[Install]
+WantedBy=multi-user.target

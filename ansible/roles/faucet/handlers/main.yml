@@ -1,0 +1,6 @@
+---
+- name: Restart solana-faucet
+  systemd:
+    name: solana-faucet
+    state: restarted
+    daemon_reload: yes

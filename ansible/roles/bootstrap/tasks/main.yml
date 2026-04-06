@@ -1,0 +1,262 @@
+---
+- name: Generate genesis keypair
+  command: /usr/local/bin/solana-keygen new --no-bip39-passphrase -o {{ keypair_path }}/genesis.json
+  args:
+    creates: "{{ keypair_path }}/genesis.json"
+  become: true
+  become_user: solana
+
+- name: Generate faucet keypair
+  command: /usr/local/bin/solana-keygen new --no-bip39-passphrase -o {{ keypair_path }}/faucet-keypair.json
+  args:
+    creates: "{{ keypair_path }}/faucet-keypair.json"
+  become: true
+  become_user: solana
+
+- name: Generate bootstrap identity keypair
+  command: /usr/local/bin/solana-keygen new --no-bip39-passphrase -o {{ keypair_path }}/identity.json
+  args:
+    creates: "{{ keypair_path }}/identity.json"
+  become: true
+  become_user: solana
+
+- name: Generate bootstrap vote account keypair
+  command: /usr/local/bin/solana-keygen new --no-bip39-passphrase -o {{ keypair_path }}/vote-account.json
+  args:
+    creates: "{{ keypair_path }}/vote-account.json"
+  become: true
+  become_user: solana
+
+- name: Generate bootstrap stake account keypair
+  command: /usr/local/bin/solana-keygen new --no-bip39-passphrase -o {{ keypair_path }}/stake-account.json
+  args:
+    creates: "{{ keypair_path }}/stake-account.json"
+  become: true
+  become_user: solana
+
+- name: Generate validator identity keypairs
+  command: /usr/local/bin/solana-keygen new --no-bip39-passphrase -o {{ keypair_path }}/validator-{{ item }}-identity.json
+  args:
+    creates: "{{ keypair_path }}/validator-{{ item }}-identity.json"
+  become: true
+  become_user: solana
+  loop: "{{ groups['validators'] }}"
+
+- name: Generate validator vote account keypairs
+  command: /usr/local/bin/solana-keygen new --no-bip39-passphrase -o {{ keypair_path }}/validator-{{ item }}-vote-account.json
+  args:
+    creates: "{{ keypair_path }}/validator-{{ item }}-vote-account.json"
+  become: true
+  become_user: solana
+  loop: "{{ groups['validators'] }}"
+
+- name: Generate validator stake account keypairs
+  command: /usr/local/bin/solana-keygen new --no-bip39-passphrase -o {{ keypair_path }}/validator-{{ item }}-stake-account.json
+  args:
+    creates: "{{ keypair_path }}/validator-{{ item }}-stake-account.json"
+  become: true
+  become_user: solana
+  loop: "{{ groups['validators'] }}"
+
+- name: Get bootstrap identity pubkey
+  command: /usr/local/bin/solana-keygen pubkey {{ keypair_path }}/identity.json
+  register: bootstrap_identity_pubkey_result
+  changed_when: false
+  become: true
+  become_user: solana
+
+- name: Set bootstrap identity pubkey fact
+  set_fact:
+    bootstrap_identity_pubkey: "{{ bootstrap_identity_pubkey_result.stdout }}"
+
+- name: Get faucet pubkey
+  command: /usr/local/bin/solana-keygen pubkey {{ keypair_path }}/faucet-keypair.json
+  register: faucet_pubkey_result
+  changed_when: false
+  become: true
+  become_user: solana
+
+- name: Check if genesis already created
+  stat:
+    path: "{{ ledger_path }}/genesis.bin"
+  register: genesis_bin
+
+- name: Run solana-genesis
+  command: >
+    /usr/local/bin/solana-genesis
+    --cluster-type development
+    --ledger {{ ledger_path }}
+    --identity {{ keypair_path }}/identity.json
+    --vote-account {{ keypair_path }}/vote-account.json
+    --stake-account {{ keypair_path }}/stake-account.json
+    --faucet-pubkey {{ faucet_pubkey_result.stdout }}
+    --faucet-lamports {{ genesis_lamports }}
+    --slots-per-epoch {{ slots_per_epoch }}
+    --ticks-per-slot {{ ticks_per_slot }}
+    --target-tick-duration {{ target_tick_duration }}
+    --hashes-per-tick auto
+    --bootstrap-validator-lamports {{ validator_stake_lamports }}
+    --bootstrap-validator-stake-lamports {{ validator_stake_lamports }}
+    --max-genesis-archive-unpacked-size 1073741824
+  become: true
+  become_user: solana
+  when: not genesis_bin.stat.exists
+
+- name: Extract genesis hash
+  command: /usr/local/bin/solana genesis-hash --ledger {{ ledger_path }}
+  register: genesis_hash_result
+  changed_when: false
+  become: true
+  become_user: solana
+
+- name: Set genesis hash fact
+  set_fact:
+    genesis_hash: "{{ genesis_hash_result.stdout }}"
+
+- name: Write genesis hash to file
+  copy:
+    content: "{{ genesis_hash }}"
+    dest: "{{ keypair_path }}/genesis-hash.txt"
+    owner: solana
+    group: solana
+    mode: "0644"
+
+- name: Write bootstrap identity pubkey to file
+  copy:
+    content: "{{ bootstrap_identity_pubkey }}"
+    dest: "{{ keypair_path }}/bootstrap-identity-pubkey.txt"
+    owner: solana
+    group: solana
+    mode: "0644"
+
+- name: Deploy bootstrap validator systemd service
+  template:
+    src: solana-bootstrap.service.j2
+    dest: /etc/systemd/system/solana-bootstrap.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start bootstrap validator
+  systemd:
+    name: solana-bootstrap
+    enabled: yes
+    state: started
+
+- name: Wait for bootstrap validator to be healthy
+  command: /usr/local/bin/solana gossip --url http://127.0.0.1:{{ rpc_port }}
+  register: gossip_result
+  until: gossip_result.rc == 0
+  retries: 30
+  delay: 10
+  changed_when: false
+  become: true
+  become_user: solana
+
+- name: Set Solana CLI config to local bootstrap
+  command: /usr/local/bin/solana config set --url http://127.0.0.1:{{ rpc_port }} --keypair {{ keypair_path }}/identity.json
+  become: true
+  become_user: solana
+  changed_when: false
+
+- name: Create vote accounts for each validator
+  shell: |
+    VOTE_PUBKEY=$(/usr/local/bin/solana-keygen pubkey {{ keypair_path }}/validator-{{ item }}-vote-account.json)
+    IDENTITY_PUBKEY=$(/usr/local/bin/solana-keygen pubkey {{ keypair_path }}/validator-{{ item }}-identity.json)
+    /usr/local/bin/solana create-vote-account \
+      {{ keypair_path }}/validator-{{ item }}-vote-account.json \
+      {{ keypair_path }}/validator-{{ item }}-identity.json \
+      $IDENTITY_PUBKEY \
+      --commission 10 \
+      --keypair {{ keypair_path }}/identity.json \
+      --url http://127.0.0.1:{{ rpc_port }} || true
+  become: true
+  become_user: solana
+  loop: "{{ groups['validators'] }}"
+  changed_when: false
+
+- name: Delegate stake for each validator
+  shell: |
+    /usr/local/bin/solana delegate-stake \
+      {{ keypair_path }}/validator-{{ item }}-stake-account.json \
+      {{ keypair_path }}/validator-{{ item }}-vote-account.json \
+      --keypair {{ keypair_path }}/identity.json \
+      --url http://127.0.0.1:{{ rpc_port }} \
+      --force || true
+  become: true
+  become_user: solana
+  loop: "{{ groups['validators'] }}"
+  changed_when: false
+
+- name: Create staging directory for keypair distribution
+  file:
+    path: /tmp/keypairs
+    state: directory
+    owner: solana
+    group: solana
+    mode: "0755"
+
+- name: Copy validator keypairs to staging directory
+  copy:
+    src: "{{ keypair_path }}/{{ item[1] }}"
+    dest: "/tmp/keypairs/{{ item[1] }}"
+    remote_src: yes
+    owner: solana
+    group: solana
+    mode: "0600"
+  loop: "{{ groups['validators'] | product(['identity.json', 'vote-account.json']) | list }}"
+  vars:
+    keypair_files:
+      - "validator-{{ item[0] }}-identity.json"
+      - "validator-{{ item[0] }}-vote-account.json"
+
+- name: Copy individual validator identity keypairs to staging
+  copy:
+    src: "{{ keypair_path }}/validator-{{ item }}-identity.json"
+    dest: "/tmp/keypairs/validator-{{ item }}-identity.json"
+    remote_src: yes
+    owner: solana
+    group: solana
+    mode: "0600"
+  loop: "{{ groups['validators'] }}"
+
+- name: Copy individual validator vote-account keypairs to staging
+  copy:
+    src: "{{ keypair_path }}/validator-{{ item }}-vote-account.json"
+    dest: "/tmp/keypairs/validator-{{ item }}-vote-account.json"
+    remote_src: yes
+    owner: solana
+    group: solana
+    mode: "0600"
+  loop: "{{ groups['validators'] }}"
+
+- name: Copy faucet keypair to staging
+  copy:
+    src: "{{ keypair_path }}/faucet-keypair.json"
+    dest: "/tmp/keypairs/faucet-keypair.json"
+    remote_src: yes
+    owner: solana
+    group: solana
+    mode: "0600"
+
+- name: Copy genesis hash to staging
+  copy:
+    src: "{{ keypair_path }}/genesis-hash.txt"
+    dest: "/tmp/keypairs/genesis-hash.txt"
+    remote_src: yes
+    owner: solana
+    group: solana
+    mode: "0644"
+
+- name: Copy bootstrap identity pubkey to staging
+  copy:
+    src: "{{ keypair_path }}/bootstrap-identity-pubkey.txt"
+    dest: "/tmp/keypairs/bootstrap-identity-pubkey.txt"
+    remote_src: yes
+    owner: solana
+    group: solana
+    mode: "0644"

@@ -1,0 +1,6 @@
+---
+- name: Restart bootstrap validator
+  systemd:
+    name: solana-bootstrap
+    state: restarted
+    daemon_reload: yes

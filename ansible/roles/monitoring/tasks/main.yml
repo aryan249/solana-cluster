@@ -1,0 +1,122 @@
+---
+- name: Install Docker prerequisites
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+
+- name: Install Docker and docker-compose
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+      - docker-compose
+    state: present
+    update_cache: yes
+
+- name: Ensure Docker service is running
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Add solana user to docker group
+  user:
+    name: solana
+    groups: docker
+    append: yes
+
+- name: Create monitoring directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/monitoring
+    - /opt/monitoring/prometheus
+    - /opt/monitoring/grafana
+    - /opt/monitoring/grafana/provisioning
+    - /opt/monitoring/grafana/provisioning/datasources
+    - /opt/monitoring/grafana/provisioning/dashboards
+    - /opt/monitoring/grafana/dashboards
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: /opt/monitoring/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Prometheus configuration
+  template:
+    src: prometheus.yml.j2
+    dest: /opt/monitoring/prometheus/prometheus.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Grafana datasource provisioning
+  template:
+    src: grafana-datasource.yml.j2
+    dest: /opt/monitoring/grafana/provisioning/datasources/datasource.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Grafana dashboard provisioning
+  template:
+    src: grafana-dashboard-provider.yml.j2
+    dest: /opt/monitoring/grafana/provisioning/dashboards/dashboard.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Grafana Solana cluster dashboard
+  copy:
+    src: solana-cluster-dashboard.json
+    dest: /opt/monitoring/grafana/dashboards/solana-cluster-dashboard.json
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start monitoring stack with docker-compose
+  command: docker-compose up -d
+  args:
+    chdir: /opt/monitoring
+  changed_when: true
+
+- name: Wait for Grafana to be healthy
+  uri:
+    url: "http://127.0.0.1:3000/api/health"
+    method: GET
+    return_content: yes
+  register: grafana_health
+  until: grafana_health.status == 200
+  retries: 30
+  delay: 5
+
+- name: Print monitoring access information
+  debug:
+    msg:
+      - "Monitoring stack is running on {{ ansible_host }}"
+      - "Grafana: http://{{ ansible_host }}:3000 (admin/admin)"
+      - "Prometheus: http://{{ ansible_host }}:9090"

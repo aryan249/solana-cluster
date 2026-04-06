@@ -1,0 +1,9 @@
+---
+- name: Reload sysctl
+  command: sysctl --system
+  listen: "Reload sysctl"
+
+- name: Restart systemd
+  systemd:
+    daemon_reexec: yes
+  listen: "Restart systemd"

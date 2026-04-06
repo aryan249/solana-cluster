@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+# Solana validator resource limits
+
+*               soft    nofile          1000000
+*               hard    nofile          1000000
+*               soft    nproc           65535
+*               hard    nproc           65535
+solana          soft    nofile          1000000
+solana          hard    nofile          1000000
+solana          soft    nproc           65535
+solana          hard    nproc           65535

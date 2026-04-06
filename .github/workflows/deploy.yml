@@ -79,6 +79,7 @@ jobs:
 
       - name: Generate Ansible Inventory from Terraform Outputs
         run: |
+          mkdir -p ansible/inventory
           cat > ansible/inventory/hosts.yml << INVENTORY
           ---
           all:

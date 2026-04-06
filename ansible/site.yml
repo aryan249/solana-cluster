@@ -1,0 +1,37 @@
+---
+- name: Configure all nodes with common packages and Solana installation
+  hosts: all
+  become: true
+  roles:
+    - common
+    - solana-install
+
+- name: Bootstrap the genesis validator
+  hosts: bootstrap
+  become: true
+  roles:
+    - bootstrap
+
+- name: Configure and start validators
+  hosts: validators
+  become: true
+  roles:
+    - validator
+
+- name: Configure and start RPC node
+  hosts: rpc
+  become: true
+  roles:
+    - rpc
+
+- name: Configure and start faucet
+  hosts: faucet
+  become: true
+  roles:
+    - faucet
+
+- name: Deploy monitoring stack on bootstrap node
+  hosts: bootstrap
+  become: true
+  roles:
+    - monitoring

@@ -1,0 +1,6 @@
+---
+- name: Restart solana-validator
+  systemd:
+    name: solana-validator
+    state: restarted
+    daemon_reload: yes

@@ -1,0 +1,22 @@
+---
+solana_version: "1.18.15"
+cluster_name: "private-testnet"
+
+genesis_lamports: 500000000000
+slots_per_epoch: 432
+ticks_per_slot: 64
+target_tick_duration: 6250
+
+gossip_port: 8001
+tpu_port: 8004
+tvu_port: 8005
+tpu_forwards_port: 8006
+metrics_port: 9900
+rpc_port: 8899
+rpc_ws_port: 8900
+
+validator_stake_lamports: 100000000000
+
+ledger_path: /ledger
+log_path: /var/log/solana
+keypair_path: /home/solana/keypairs

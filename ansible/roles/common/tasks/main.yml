@@ -1,0 +1,215 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Upgrade all packages
+  apt:
+    upgrade: dist
+    autoremove: yes
+
+- name: Install required system packages
+  apt:
+    name:
+      - libssl-dev
+      - libudev-dev
+      - pkg-config
+      - zlib1g-dev
+      - llvm
+      - clang
+      - cmake
+      - make
+      - protobuf-compiler
+      - curl
+      - wget
+      - git
+      - build-essential
+      - acl
+      - jq
+    state: present
+
+- name: Create solana user
+  user:
+    name: solana
+    shell: /bin/bash
+    create_home: yes
+    password: "!"
+    state: present
+
+- name: Add solana user to sudoers
+  copy:
+    content: "solana ALL=(ALL) NOPASSWD:ALL\n"
+    dest: /etc/sudoers.d/solana
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: Create keypairs directory
+  file:
+    path: "{{ keypair_path }}"
+    state: directory
+    owner: solana
+    group: solana
+    mode: "0700"
+
+- name: Create log directory
+  file:
+    path: "{{ log_path }}"
+    state: directory
+    owner: solana
+    group: solana
+    mode: "0755"
+
+- name: Detect EBS volume device name
+  set_fact:
+    ebs_device: >-
+      {{ '/dev/nvme1n1' if ansible_devices.get('nvme1n1') is defined
+         else '/dev/xvdb' }}
+
+- name: Check if EBS device exists
+  stat:
+    path: "{{ ebs_device }}"
+  register: ebs_device_stat
+
+- name: Check if EBS volume has a filesystem
+  command: "blkid -s TYPE -o value {{ ebs_device }}"
+  register: ebs_fs_check
+  changed_when: false
+  failed_when: false
+  when: ebs_device_stat.stat.exists
+
+- name: Format EBS volume with ext4 if no filesystem exists
+  filesystem:
+    fstype: ext4
+    dev: "{{ ebs_device }}"
+  when:
+    - ebs_device_stat.stat.exists
+    - ebs_fs_check.stdout == ""
+
+- name: Create ledger mount point
+  file:
+    path: "{{ ledger_path }}"
+    state: directory
+    owner: solana
+    group: solana
+    mode: "0755"
+
+- name: Mount EBS volume at ledger path
+  mount:
+    path: "{{ ledger_path }}"
+    src: "{{ ebs_device }}"
+    fstype: ext4
+    opts: noatime,nodiratime
+    state: mounted
+  when: ebs_device_stat.stat.exists
+
+- name: Ensure ledger directory ownership after mount
+  file:
+    path: "{{ ledger_path }}"
+    state: directory
+    owner: solana
+    group: solana
+    mode: "0755"
+
+- name: Configure system limits
+  template:
+    src: limits.conf.j2
+    dest: /etc/security/limits.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Configure systemd default limits
+  template:
+    src: system.conf.j2
+    dest: /etc/systemd/system.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart systemd
+
+- name: Configure sysctl parameters for Solana
+  template:
+    src: sysctl-solana.conf.j2
+    dest: /etc/sysctl.d/99-solana.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload sysctl
+
+- name: Apply sysctl parameters immediately
+  command: sysctl --system
+  changed_when: false
+
+- name: Configure logrotate for Solana
+  template:
+    src: solana-logrotate.j2
+    dest: /etc/logrotate.d/solana
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install UFW
+  apt:
+    name: ufw
+    state: present
+
+- name: Allow SSH through UFW
+  ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+
+- name: Allow gossip UDP through UFW
+  ufw:
+    rule: allow
+    port: "{{ gossip_port | string }}"
+    proto: udp
+
+- name: Allow gossip TCP through UFW
+  ufw:
+    rule: allow
+    port: "{{ gossip_port | string }}"
+    proto: tcp
+
+- name: Allow TPU UDP through UFW
+  ufw:
+    rule: allow
+    port: "{{ tpu_port | string }}"
+    proto: udp
+
+- name: Allow TVU UDP through UFW
+  ufw:
+    rule: allow
+    port: "{{ tvu_port | string }}"
+    proto: udp
+
+- name: Allow TPU forwards UDP through UFW
+  ufw:
+    rule: allow
+    port: "{{ tpu_forwards_port | string }}"
+    proto: udp
+
+- name: Allow RPC TCP through UFW
+  ufw:
+    rule: allow
+    port: "{{ rpc_port | string }}"
+    proto: tcp
+
+- name: Allow RPC WebSocket TCP through UFW
+  ufw:
+    rule: allow
+    port: "{{ rpc_ws_port | string }}"
+    proto: tcp
+
+- name: Allow metrics TCP through UFW
+  ufw:
+    rule: allow
+    port: "{{ metrics_port | string }}"
+    proto: tcp
+
+- name: Enable UFW
+  ufw:
+    state: enabled
+    policy: deny
+    direction: incoming

@@ -1,0 +1,33 @@
+---
+- name: Fetch faucet keypair from bootstrap
+  fetch:
+    src: "/tmp/keypairs/faucet-keypair.json"
+    dest: "/tmp/fetched-keypairs/faucet-keypair.json"
+    flat: yes
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+
+- name: Copy faucet keypair to faucet node
+  copy:
+    src: "/tmp/fetched-keypairs/faucet-keypair.json"
+    dest: "{{ keypair_path }}/faucet-keypair.json"
+    owner: solana
+    group: solana
+    mode: "0600"
+
+- name: Deploy faucet systemd service
+  template:
+    src: solana-faucet.service.j2
+    dest: /etc/systemd/system/solana-faucet.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start solana-faucet
+  systemd:
+    name: solana-faucet
+    enabled: yes
+    state: started

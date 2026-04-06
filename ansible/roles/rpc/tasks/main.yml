@@ -1,0 +1,61 @@
+---
+- name: Fetch RPC node identity keypair from bootstrap
+  fetch:
+    src: "/tmp/keypairs/bootstrap-identity-pubkey.txt"
+    dest: "/tmp/fetched-keypairs/bootstrap-identity-pubkey.txt"
+    flat: yes
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+
+- name: Fetch genesis hash from bootstrap
+  fetch:
+    src: "/tmp/keypairs/genesis-hash.txt"
+    dest: "/tmp/fetched-keypairs/genesis-hash.txt"
+    flat: yes
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+
+- name: Read genesis hash
+  set_fact:
+    genesis_hash: "{{ lookup('file', '/tmp/fetched-keypairs/genesis-hash.txt') }}"
+
+- name: Read bootstrap identity pubkey
+  set_fact:
+    bootstrap_identity_pubkey: "{{ lookup('file', '/tmp/fetched-keypairs/bootstrap-identity-pubkey.txt') }}"
+
+- name: Generate RPC node identity keypair
+  command: /usr/local/bin/solana-keygen new --no-bip39-passphrase -o {{ keypair_path }}/identity.json
+  args:
+    creates: "{{ keypair_path }}/identity.json"
+  become: true
+  become_user: solana
+
+- name: Deploy RPC node systemd service
+  template:
+    src: solana-rpc.service.j2
+    dest: /etc/systemd/system/solana-rpc.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start solana-rpc
+  systemd:
+    name: solana-rpc
+    enabled: yes
+    state: started
+
+- name: Wait for RPC node to be healthy
+  uri:
+    url: "http://127.0.0.1:{{ rpc_port }}/health"
+    method: GET
+    return_content: yes
+  register: rpc_health
+  until: rpc_health.status == 200
+  retries: 30
+  delay: 10
+
+- name: Display RPC health status
+  debug:
+    msg: "RPC node health: {{ rpc_health.content }}"

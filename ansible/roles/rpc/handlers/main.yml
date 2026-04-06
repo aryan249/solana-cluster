@@ -1,0 +1,6 @@
+---
+- name: Restart solana-rpc
+  systemd:
+    name: solana-rpc
+    state: restarted
+    daemon_reload: yes

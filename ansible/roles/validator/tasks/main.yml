@@ -1,0 +1,97 @@
+---
+- name: Fetch validator identity keypair from bootstrap
+  fetch:
+    src: "/tmp/keypairs/validator-{{ inventory_hostname }}-identity.json"
+    dest: "/tmp/fetched-keypairs/{{ inventory_hostname }}/"
+    flat: yes
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+
+- name: Fetch validator vote-account keypair from bootstrap
+  fetch:
+    src: "/tmp/keypairs/validator-{{ inventory_hostname }}-vote-account.json"
+    dest: "/tmp/fetched-keypairs/{{ inventory_hostname }}/"
+    flat: yes
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+
+- name: Fetch genesis hash from bootstrap
+  fetch:
+    src: "/tmp/keypairs/genesis-hash.txt"
+    dest: "/tmp/fetched-keypairs/genesis-hash.txt"
+    flat: yes
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+  run_once: true
+
+- name: Fetch bootstrap identity pubkey from bootstrap
+  fetch:
+    src: "/tmp/keypairs/bootstrap-identity-pubkey.txt"
+    dest: "/tmp/fetched-keypairs/bootstrap-identity-pubkey.txt"
+    flat: yes
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+  run_once: true
+
+- name: Read genesis hash
+  set_fact:
+    genesis_hash: "{{ lookup('file', '/tmp/fetched-keypairs/genesis-hash.txt') }}"
+
+- name: Read bootstrap identity pubkey
+  set_fact:
+    bootstrap_identity_pubkey: "{{ lookup('file', '/tmp/fetched-keypairs/bootstrap-identity-pubkey.txt') }}"
+
+- name: Copy identity keypair to validator
+  copy:
+    src: "/tmp/fetched-keypairs/{{ inventory_hostname }}/validator-{{ inventory_hostname }}-identity.json"
+    dest: "{{ keypair_path }}/identity.json"
+    owner: solana
+    group: solana
+    mode: "0600"
+
+- name: Copy vote-account keypair to validator
+  copy:
+    src: "/tmp/fetched-keypairs/{{ inventory_hostname }}/validator-{{ inventory_hostname }}-vote-account.json"
+    dest: "{{ keypair_path }}/vote-account.json"
+    owner: solana
+    group: solana
+    mode: "0600"
+
+- name: Deploy validator systemd service
+  template:
+    src: solana-validator.service.j2
+    dest: /etc/systemd/system/solana-validator.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start solana-validator
+  systemd:
+    name: solana-validator
+    enabled: yes
+    state: started
+
+- name: Wait for validator to appear in gossip
+  command: >
+    /usr/local/bin/solana gossip
+    --url http://{{ hostvars[groups['bootstrap'][0]]['private_ip'] }}:{{ rpc_port }}
+  register: gossip_result
+  until: gossip_result.rc == 0 and ansible_host in gossip_result.stdout
+  retries: 30
+  delay: 10
+  changed_when: false
+  become: true
+  become_user: solana
+
+- name: Verify validator in solana validators output
+  command: >
+    /usr/local/bin/solana validators
+    --url http://{{ hostvars[groups['bootstrap'][0]]['private_ip'] }}:{{ rpc_port }}
+  register: validators_result
+  changed_when: false
+  become: true
+  become_user: solana
+
+- name: Display validators output
+  debug:
+    msg: "{{ validators_result.stdout_lines | last }}"

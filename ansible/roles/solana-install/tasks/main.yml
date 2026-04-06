@@ -1,0 +1,61 @@
+---
+- name: Check if Solana is already installed at correct version
+  command: /home/solana/.local/share/solana/install/active_release/bin/solana --version
+  register: solana_version_check
+  changed_when: false
+  failed_when: false
+  become: true
+  become_user: solana
+
+- name: Download Solana install script
+  get_url:
+    url: https://release.solana.com/v{{ solana_version }}/install
+    dest: /tmp/solana-install.sh
+    mode: "0755"
+  when: solana_version_check.rc != 0 or solana_version not in (solana_version_check.stdout | default(''))
+
+- name: Install Solana v{{ solana_version }}
+  command: /tmp/solana-install.sh v{{ solana_version }}
+  become: true
+  become_user: solana
+  environment:
+    PATH: "/home/solana/.local/share/solana/install/active_release/bin:{{ ansible_env.PATH }}"
+  when: solana_version_check.rc != 0 or solana_version not in (solana_version_check.stdout | default(''))
+
+- name: Create symlinks for Solana binaries in /usr/local/bin
+  file:
+    src: "/home/solana/.local/share/solana/install/active_release/bin/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    state: link
+    force: yes
+  loop:
+    - solana
+    - solana-validator
+    - solana-keygen
+    - solana-faucet
+    - solana-genesis
+
+- name: Deploy Solana PATH profile script
+  template:
+    src: solana-path.sh.j2
+    dest: /etc/profile.d/solana.sh
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Verify Solana installation
+  command: /usr/local/bin/solana --version
+  register: solana_installed_version
+  changed_when: false
+
+- name: Display installed Solana version
+  debug:
+    msg: "Solana version: {{ solana_installed_version.stdout }}"
+
+- name: Set default RPC URL
+  command: >
+    /usr/local/bin/solana config set
+    --url http://{{ hostvars[groups['rpc'][0]]['ansible_host'] }}:{{ rpc_port }}
+  become: true
+  become_user: solana
+  changed_when: false

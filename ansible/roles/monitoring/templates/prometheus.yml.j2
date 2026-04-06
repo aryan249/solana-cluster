@@ -1,0 +1,31 @@
+# {{ ansible_managed }}
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "bootstrap-validator"
+    static_configs:
+      - targets:
+          - "{{ hostvars[groups['bootstrap'][0]]['private_ip'] }}:{{ metrics_port }}"
+        labels:
+          role: "bootstrap"
+          instance_name: "{{ groups['bootstrap'][0] }}"
+
+{% for host in groups['validators'] %}
+  - job_name: "validator-{{ host }}"
+    static_configs:
+      - targets:
+          - "{{ hostvars[host]['private_ip'] }}:{{ metrics_port }}"
+        labels:
+          role: "validator"
+          instance_name: "{{ host }}"
+
+{% endfor %}
+  - job_name: "rpc-node"
+    static_configs:
+      - targets:
+          - "{{ hostvars[groups['rpc'][0]]['private_ip'] }}:{{ metrics_port }}"
+        labels:
+          role: "rpc"
+          instance_name: "{{ groups['rpc'][0] }}"
