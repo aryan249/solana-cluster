@@ -148,22 +148,19 @@
     group: solana
     mode: "0644"
 
-- name: Wait for bootstrap to produce first snapshot
-  shell: find {{ ledger_path }}/snapshot/ -name 'snapshot-*' -type f 2>/dev/null | wc -l
-  register: snapshot_count
-  until: snapshot_count.stdout | int > 0
+- name: Wait for bootstrap to reach slot 250 (enough for snapshot generation)
+  shell: >
+    curl -s http://127.0.0.1:{{ rpc_port }} -X POST
+    -H "Content-Type: application/json"
+    -d '{"jsonrpc":"2.0","id":1,"method":"getSlot"}'
+    | python3 -c "import sys,json; print(json.load(sys.stdin).get('result',0))"
+  register: current_slot
+  until: current_slot.stdout | int > 250
   retries: 60
-  delay: 10
+  delay: 5
   changed_when: false
-
-- name: Display snapshot info
-  shell: find {{ ledger_path }} -name 'snapshot-*' -type f 2>/dev/null | head -5
-  register: snapshot_info
-  changed_when: false
-
-- name: Show snapshot status
-  debug:
-    msg: "Snapshots available: {{ snapshot_info.stdout_lines }}"
+  become: true
+  become_user: solana
 
 - name: Write bootstrap identity pubkey to file
   copy:
