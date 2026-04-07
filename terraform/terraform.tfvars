@@ -8,4 +8,4 @@ ledger_volume_iops      = 3000
 ledger_volume_throughput = 125
 environment             = "private-testnet"
 key_pair_name           = "solana-cluster-key"
-validator_count         = 3
+validator_count         = 5

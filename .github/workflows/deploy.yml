@@ -82,6 +82,10 @@ jobs:
           echo "rpc_private_ip=$(terraform output -raw rpc_private_ip)" >> "$GITHUB_OUTPUT"
           echo "faucet_public_ip=$(terraform output -raw faucet_public_ip)" >> "$GITHUB_OUTPUT"
           echo "faucet_private_ip=$(terraform output -raw faucet_private_ip)" >> "$GITHUB_OUTPUT"
+          echo "validator_4_public_ip=$(terraform output -raw validator_4_public_ip)" >> "$GITHUB_OUTPUT"
+          echo "validator_4_private_ip=$(terraform output -raw validator_4_private_ip)" >> "$GITHUB_OUTPUT"
+          echo "validator_5_public_ip=$(terraform output -raw validator_5_public_ip)" >> "$GITHUB_OUTPUT"
+          echo "validator_5_private_ip=$(terraform output -raw validator_5_private_ip)" >> "$GITHUB_OUTPUT"
           echo "ssh_key_path=$(terraform output -raw ssh_private_key_path)" >> "$GITHUB_OUTPUT"
           echo "alb_dns=$(terraform output -raw alb_dns_name)" >> "$GITHUB_OUTPUT"
 
@@ -120,6 +124,13 @@ jobs:
                   sol-validator-3:
                     ansible_host: ${{ steps.tf_outputs.outputs.validator_3_public_ip }}
                     private_ip: ${{ steps.tf_outputs.outputs.validator_3_private_ip }}
+                  # --- Spare validators (add below to scale) ---
+                  # sol-validator-4:
+                  #   ansible_host: ${{ steps.tf_outputs.outputs.validator_4_public_ip }}
+                  #   private_ip: ${{ steps.tf_outputs.outputs.validator_4_private_ip }}
+                  # sol-validator-5:
+                  #   ansible_host: ${{ steps.tf_outputs.outputs.validator_5_public_ip }}
+                  #   private_ip: ${{ steps.tf_outputs.outputs.validator_5_private_ip }}
 
               rpc:
                 hosts:

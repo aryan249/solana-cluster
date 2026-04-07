@@ -42,6 +42,26 @@ output "validator_3_private_ip" {
   value       = module.ec2.validator_private_ips[2]
 }
 
+output "validator_4_public_ip" {
+  description = "Public IP of validator 4 (spare for scaling demo)"
+  value       = module.ec2.validator_public_ips[3]
+}
+
+output "validator_4_private_ip" {
+  description = "Private IP of validator 4 (spare for scaling demo)"
+  value       = module.ec2.validator_private_ips[3]
+}
+
+output "validator_5_public_ip" {
+  description = "Public IP of validator 5 (spare for scaling demo)"
+  value       = module.ec2.validator_public_ips[4]
+}
+
+output "validator_5_private_ip" {
+  description = "Private IP of validator 5 (spare for scaling demo)"
+  value       = module.ec2.validator_private_ips[4]
+}
+
 output "rpc_public_ip" {
   description = "Public IP of the RPC node"
   value       = module.ec2.rpc_public_ip
