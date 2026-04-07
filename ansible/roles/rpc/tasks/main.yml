@@ -21,6 +21,19 @@
   set_fact:
     bootstrap_identity_pubkey: "{{ lookup('file', '/tmp/fetched-keypairs/bootstrap-identity-pubkey.txt') }}"
 
+- name: Check if RPC service exists and is failed (replacement scenario)
+  shell: systemctl is-failed solana-rpc 2>/dev/null || echo "not-found"
+  register: rpc_failed_check
+  changed_when: false
+  ignore_errors: true
+
+- name: Clean ledger for fresh sync (replacement scenario)
+  shell: |
+    systemctl stop solana-rpc 2>/dev/null || true
+    rm -rf {{ ledger_path }}/accounts {{ ledger_path }}/rocksdb {{ ledger_path }}/snapshot {{ ledger_path }}/accounts_hash_cache {{ ledger_path }}/accounts_index
+  when: rpc_failed_check.stdout == "failed"
+  become: true
+
 - name: Generate RPC node identity keypair
   command: /usr/local/bin/solana-keygen new --no-bip39-passphrase -o {{ keypair_path }}/identity.json
   args:

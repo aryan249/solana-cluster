@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""Solana Prometheus Exporter — scrapes local RPC and exposes /metrics"""
+import json
+import subprocess
+import http.server
+import time
+import threading
+
+PORT = {{ metrics_port }}
+RPC_URL = "http://127.0.0.1:{{ rpc_port }}"
+
+metrics = {}
+
+def rpc_call(method, params=None):
+    try:
+        payload = {"jsonrpc": "2.0", "id": 1, "method": method}
+        if params:
+            payload["params"] = params
+        cmd = ["curl", "-s", "-m", "5", RPC_URL, "-X", "POST",
+               "-H", "Content-Type: application/json",
+               "-d", json.dumps(payload)]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        data = json.loads(result.stdout)
+        return data.get("result")
+    except Exception:
+        return None
+
+def collect_metrics():
+    while True:
+        try:
+            slot = rpc_call("getSlot")
+            if slot is not None:
+                metrics["solana_slot_height"] = slot
+
+            block_height = rpc_call("getBlockHeight")
+            if block_height is not None:
+                metrics["solana_block_height"] = block_height
+
+            epoch_info = rpc_call("getEpochInfo")
+            if epoch_info:
+                metrics["solana_epoch_number"] = epoch_info.get("epoch", 0)
+                metrics["solana_epoch_slot_index"] = epoch_info.get("slotIndex", 0)
+                metrics["solana_epoch_slots_in_epoch"] = epoch_info.get("slotsInEpoch", 432)
+                metrics["solana_transaction_count"] = epoch_info.get("transactionCount", 0)
+
+            health = rpc_call("getHealth")
+            metrics["solana_health"] = 1 if health == "ok" else 0
+
+            vote_accounts = rpc_call("getVoteAccounts")
+            if vote_accounts:
+                current = vote_accounts.get("current", [])
+                delinquent = vote_accounts.get("delinquent", [])
+                metrics["solana_active_validators"] = len(current)
+                metrics["solana_delinquent_validators"] = len(delinquent)
+                total_stake = sum(v.get("activatedStake", 0) for v in current)
+                metrics["solana_total_active_stake"] = total_stake
+                if current:
+                    last_votes = [v.get("lastVote", 0) for v in current]
+                    metrics["solana_last_vote"] = max(last_votes)
+                    root_slots = [v.get("rootSlot", 0) for v in current]
+                    metrics["solana_root_slot"] = max(root_slots)
+
+            cluster_nodes = rpc_call("getClusterNodes")
+            if cluster_nodes:
+                metrics["solana_active_peers"] = len(cluster_nodes)
+
+            block_prod = rpc_call("getBlockProduction")
+            if block_prod:
+                value = block_prod.get("value", {})
+                by_id = value.get("byIdentity", {})
+                total_leader = sum(v[0] for v in by_id.values())
+                total_produced = sum(v[1] for v in by_id.values())
+                metrics["solana_leader_slots_total"] = total_leader
+                metrics["solana_blocks_produced_total"] = total_produced
+                if total_leader > 0:
+                    metrics["solana_skipped_slots_total"] = total_leader - total_produced
+
+            perf = rpc_call("getRecentPerformanceSamples", [1])
+            if perf and len(perf) > 0:
+                sample = perf[0]
+                metrics["solana_tps"] = sample.get("numTransactions", 0) / max(sample.get("samplePeriodSecs", 60), 1)
+
+        except Exception:
+            pass
+        time.sleep(15)
+
+class MetricsHandler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/metrics":
+            lines = []
+            for k, v in metrics.items():
+                lines.append(f"{k} {v}")
+            body = "\n".join(lines) + "\n"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(body.encode())
+        else:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"Solana Exporter. Use /metrics\n")
+
+    def log_message(self, format, *args):
+        pass  # Suppress access logs
+
+if __name__ == "__main__":
+    collector = threading.Thread(target=collect_metrics, daemon=True)
+    collector.start()
+    server = http.server.HTTPServer(("0.0.0.0", PORT), MetricsHandler)
+    print(f"Solana exporter listening on port {PORT}")
+    server.serve_forever()

@@ -213,3 +213,35 @@
     state: enabled
     policy: deny
     direction: incoming
+
+# --- Solana Prometheus Exporter ---
+- name: Create solana-exporter directory
+  file:
+    path: /opt/solana-exporter
+    state: directory
+    owner: solana
+    group: solana
+    mode: "0755"
+
+- name: Deploy solana-exporter script
+  template:
+    src: solana-exporter.py.j2
+    dest: /opt/solana-exporter/solana-exporter.py
+    owner: solana
+    group: solana
+    mode: "0755"
+
+- name: Deploy solana-exporter systemd service
+  template:
+    src: solana-exporter.service.j2
+    dest: /etc/systemd/system/solana-exporter.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable and start solana-exporter
+  systemd:
+    name: solana-exporter
+    daemon_reload: yes
+    enabled: yes
+    state: started

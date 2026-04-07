@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Solana Prometheus Exporter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=solana
+Group=solana
+ExecStart=/usr/bin/python3 /opt/solana-exporter/solana-exporter.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
