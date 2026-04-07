@@ -148,6 +148,23 @@
     group: solana
     mode: "0644"
 
+- name: Wait for bootstrap to produce first snapshot
+  shell: ls {{ ledger_path }}/snapshot-*.tar.zst 2>/dev/null | wc -l
+  register: snapshot_count
+  until: snapshot_count.stdout | int > 0
+  retries: 60
+  delay: 10
+  changed_when: false
+
+- name: Display snapshot info
+  shell: ls -la {{ ledger_path }}/snapshot-*.tar.zst 2>/dev/null | head -3
+  register: snapshot_info
+  changed_when: false
+
+- name: Show snapshot status
+  debug:
+    msg: "Snapshots available: {{ snapshot_info.stdout_lines }}"
+
 - name: Write bootstrap identity pubkey to file
   copy:
     content: "{{ bootstrap_identity_pubkey }}"
