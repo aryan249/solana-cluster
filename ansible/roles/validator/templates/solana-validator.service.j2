@@ -23,10 +23,11 @@ ExecStart=/usr/local/bin/solana-validator \
   --log {{ log_path }}/validator.log \
   --gossip-host {{ private_ip }} \
   --no-port-check \
-  --allow-private-addr
+  --allow-private-addr \
+  --full-rpc-api \
+  --rpc-bind-address 0.0.0.0
 Restart=always
 RestartSec=10
-StartLimitIntervalSec=0
 LimitNOFILE=1000000
 LimitNPROC=65535
 TimeoutStopSec=60
