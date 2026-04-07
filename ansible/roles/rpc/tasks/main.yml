@@ -28,6 +28,21 @@
   become: true
   become_user: solana
 
+- name: Fetch genesis.bin from bootstrap
+  fetch:
+    src: "/ledger/genesis.bin"
+    dest: "/tmp/fetched-keypairs/genesis.bin"
+    flat: yes
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+
+- name: Copy genesis.bin to RPC ledger
+  copy:
+    src: "/tmp/fetched-keypairs/genesis.bin"
+    dest: "{{ ledger_path }}/genesis.bin"
+    owner: solana
+    group: solana
+    mode: "0644"
+
 - name: Deploy RPC node systemd service
   template:
     src: solana-rpc.service.j2

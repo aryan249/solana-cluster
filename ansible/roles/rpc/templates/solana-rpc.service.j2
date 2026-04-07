@@ -24,6 +24,8 @@ ExecStart=/usr/local/bin/solana-validator \
   --gossip-host {{ private_ip }} \
   --no-port-check \
   --allow-private-addr \
+  --no-snapshot-fetch \
+  --no-genesis-fetch \
   --enable-rpc-transaction-history \
   --enable-extended-tx-metadata-storage \
   --full-rpc-api \

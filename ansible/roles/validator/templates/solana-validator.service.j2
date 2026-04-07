@@ -23,7 +23,9 @@ ExecStart=/usr/local/bin/solana-validator \
   --log {{ log_path }}/validator.log \
   --gossip-host {{ private_ip }} \
   --no-port-check \
-  --allow-private-addr
+  --allow-private-addr \
+  --no-snapshot-fetch \
+  --no-genesis-fetch
 Restart=always
 RestartSec=10
 StartLimitIntervalSec=0

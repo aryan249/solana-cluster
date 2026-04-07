@@ -23,7 +23,11 @@ ExecStart=/usr/local/bin/solana-validator \
   --allow-private-addr \
   --no-wait-for-vote-to-start-leader \
   --enable-rpc-transaction-history \
-  --full-rpc-api
+  --full-rpc-api \
+  --snapshot-interval-slots 200 \
+  --maximum-full-snapshots-to-retain 3 \
+  --maximum-incremental-snapshots-to-retain 3 \
+  --rpc-bind-address 0.0.0.0
 Restart=always
 RestartSec=10
 LimitNOFILE=1000000

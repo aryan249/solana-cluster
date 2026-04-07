@@ -53,6 +53,22 @@
     group: solana
     mode: "0600"
 
+- name: Fetch genesis.bin from bootstrap
+  fetch:
+    src: "/ledger/genesis.bin"
+    dest: "/tmp/fetched-keypairs/genesis.bin"
+    flat: yes
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+  run_once: true
+
+- name: Copy genesis.bin to validator ledger
+  copy:
+    src: "/tmp/fetched-keypairs/genesis.bin"
+    dest: "{{ ledger_path }}/genesis.bin"
+    owner: solana
+    group: solana
+    mode: "0644"
+
 - name: Deploy validator systemd service
   template:
     src: solana-validator.service.j2
