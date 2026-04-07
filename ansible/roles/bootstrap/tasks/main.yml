@@ -149,7 +149,7 @@
     mode: "0644"
 
 - name: Wait for bootstrap to produce first snapshot
-  shell: ls {{ ledger_path }}/snapshot-*.tar.zst 2>/dev/null | wc -l
+  shell: find {{ ledger_path }}/snapshot/ -name 'snapshot-*' -type f 2>/dev/null | wc -l
   register: snapshot_count
   until: snapshot_count.stdout | int > 0
   retries: 60
@@ -157,7 +157,7 @@
   changed_when: false
 
 - name: Display snapshot info
-  shell: ls -la {{ ledger_path }}/snapshot-*.tar.zst 2>/dev/null | head -3
+  shell: find {{ ledger_path }} -name 'snapshot-*' -type f 2>/dev/null | head -5
   register: snapshot_info
   changed_when: false
 
