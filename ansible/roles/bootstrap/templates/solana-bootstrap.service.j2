@@ -20,6 +20,7 @@ ExecStart=/usr/local/bin/solana-validator \
   --log {{ log_path }}/validator.log \
   --gossip-host {{ private_ip }} \
   --no-port-check \
+  --allow-private-addr \
   --no-wait-for-vote-to-start-leader \
   --enable-rpc-transaction-history \
   --full-rpc-api
