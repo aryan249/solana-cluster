@@ -28,23 +28,6 @@
   become: true
   become_user: solana
 
-- name: Stop solana-rpc if running
-  systemd:
-    name: solana-rpc
-    state: stopped
-  ignore_errors: true
-
-- name: Clean RPC ledger for fresh sync
-  file:
-    path: "{{ ledger_path }}/{{ item }}"
-    state: absent
-  loop:
-    - accounts
-    - accounts_hash_cache
-    - rocksdb
-    - snapshot
-  ignore_errors: true
-
 - name: Deploy RPC node systemd service
   template:
     src: solana-rpc.service.j2
@@ -52,44 +35,26 @@
     owner: root
     group: root
     mode: "0644"
+  notify: Restart solana-rpc
 
 - name: Reload systemd daemon
   systemd:
     daemon_reload: yes
 
-- name: Start solana-rpc via shell to capture output
-  shell: |
-    systemctl enable solana-rpc
-    systemctl start solana-rpc
-    sleep 5
-    if systemctl is-active solana-rpc; then
-      echo "RPC service is running"
-    else
-      echo "RPC failed to start, checking log..."
-      tail -20 /var/log/solana/validator.log
-      echo "Retrying start..."
-      rm -rf /ledger/*
-      systemctl restart solana-rpc
-      sleep 10
-      systemctl is-active solana-rpc && echo "RPC started on retry" || echo "RPC still failing"
-    fi
-  register: rpc_start_result
+- name: Enable and start solana-rpc
+  systemd:
+    name: solana-rpc
+    enabled: yes
+    state: started
 
-- name: Display RPC start result
+- name: Wait for RPC process to be running
+  shell: systemctl is-active solana-rpc
+  register: rpc_active
+  until: rpc_active.rc == 0
+  retries: 12
+  delay: 10
+  changed_when: false
+
+- name: Display RPC service status
   debug:
-    msg: "{{ rpc_start_result.stdout_lines }}"
-
-- name: Wait for RPC node to be healthy
-  uri:
-    url: "http://127.0.0.1:{{ rpc_port }}/health"
-    method: GET
-    return_content: yes
-  register: rpc_health
-  until: rpc_health.status == 200
-  retries: 60
-  delay: 15
-  ignore_errors: true
-
-- name: Display RPC health status
-  debug:
-    msg: "RPC node health: {{ rpc_health.content | default('not yet healthy - will recover via systemd restart') }}"
+    msg: "RPC node is running. It will sync and serve RPC once caught up with the cluster."
