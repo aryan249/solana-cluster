@@ -1,4 +1,63 @@
 ---
+# ------------------------------------------------------------------
+# Phase 1: Generate keypairs on bootstrap (delegated)
+# This runs ON the bootstrap node even when --limit targets a new validator.
+# ------------------------------------------------------------------
+- name: Generate identity keypair on bootstrap for this validator
+  command: /usr/local/bin/solana-keygen new --no-bip39-passphrase -o {{ keypair_path }}/validator-{{ inventory_hostname }}-identity.json
+  args:
+    creates: "{{ keypair_path }}/validator-{{ inventory_hostname }}-identity.json"
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+  become: true
+  become_user: solana
+
+- name: Generate vote-account keypair on bootstrap for this validator
+  command: /usr/local/bin/solana-keygen new --no-bip39-passphrase -o {{ keypair_path }}/validator-{{ inventory_hostname }}-vote-account.json
+  args:
+    creates: "{{ keypair_path }}/validator-{{ inventory_hostname }}-vote-account.json"
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+  become: true
+  become_user: solana
+
+- name: Get bootstrap identity pubkey for vote account creation
+  command: /usr/local/bin/solana-keygen pubkey {{ keypair_path }}/identity.json
+  register: bootstrap_pubkey_for_vote
+  changed_when: false
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+  become: true
+  become_user: solana
+
+- name: Create vote account on bootstrap for this validator
+  shell: |
+    /usr/local/bin/solana create-vote-account \
+      {{ keypair_path }}/validator-{{ inventory_hostname }}-vote-account.json \
+      {{ keypair_path }}/validator-{{ inventory_hostname }}-identity.json \
+      {{ bootstrap_pubkey_for_vote.stdout }} \
+      --commission 10 \
+      --keypair {{ keypair_path }}/identity.json \
+      --url http://127.0.0.1:{{ rpc_port }} || true
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+  become: true
+  become_user: solana
+  changed_when: false
+
+- name: Copy keypairs to staging on bootstrap
+  copy:
+    src: "{{ keypair_path }}/validator-{{ inventory_hostname }}-{{ item }}.json"
+    dest: "/tmp/keypairs/validator-{{ inventory_hostname }}-{{ item }}.json"
+    remote_src: yes
+    owner: solana
+    group: solana
+    mode: "0600"
+  loop:
+    - identity
+    - vote-account
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+  become: true
+
+# ------------------------------------------------------------------
+# Phase 2: Fetch keypairs and deploy validator
+# ------------------------------------------------------------------
 - name: Fetch validator identity keypair from bootstrap
   fetch:
     src: "/tmp/keypairs/validator-{{ inventory_hostname }}-identity.json"
