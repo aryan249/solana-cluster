@@ -1,0 +1,37 @@
+=== getHealth ===
+{
+    "jsonrpc": "2.0",
+    "result": "ok",
+    "id": 1
+}
+
+=== getVersion ===
+{
+    "jsonrpc": "2.0",
+    "result": {
+        "feature-set": 4215500110,
+        "solana-core": "1.18.15"
+    },
+    "id": 1
+}
+
+=== getSlot ===
+{
+    "jsonrpc": "2.0",
+    "result": 38934,
+    "id": 1
+}
+
+=== getBlockHeight ===
+{
+    "jsonrpc": "2.0",
+    "result": 38934,
+    "id": 1
+}
+
+=== getTransactionCount ===
+{
+    "jsonrpc": "2.0",
+    "result": 38937,
+    "id": 1
+}

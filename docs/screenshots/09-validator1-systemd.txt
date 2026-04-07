@@ -1,0 +1,25 @@
+=== systemctl status ===
+● solana-validator.service - Solana Validator
+     Loaded: loaded (/etc/systemd/system/solana-validator.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2026-04-07 12:31:14 UTC; 10min ago
+   Main PID: 117298 (solana-validato)
+      Tasks: 142 (limit: 4578)
+     Memory: 1.4G
+        CPU: 11min 26.165s
+     CGroup: /system.slice/solana-validator.service
+             └─117298 /usr/local/bin/solana-validator --identity /home/solana/keypairs/identity.json --vote-account /home/solana/keypairs/vote-account.json --ledger /ledger --rpc-port 8899 --gossip-port 8001 --dynamic-port-range 8000-8020 --entrypoint 10.0.1.98:8001 --known-validator GHtFnkSeRtrMhbJkWuC3g9dRuS9FMhJynkD5zKWTHpNd --expected-genesis-hash 12sDvEMhMRkdx7aYE274V6gwtjJVjyHiSWND1EnnnLvD --limit-ledger-size 50000000 --log /var/log/solana/validator.log --gossip-host 10.0.1.84 --no-port-check --allow-private-addr --full-rpc-api --rpc-bind-address 0.0.0.0
+
+Apr 07 12:31:14 ip-10-0-1-84 systemd[1]: Started Solana Validator.
+Apr 07 12:31:14 ip-10-0-1-84 solana-validator[117298]: log file: /var/log/solana/validator.log
+
+=== journalctl (last 10 lines) ===
+Apr 07 08:36:30 ip-10-0-1-84 systemd[1]: Started Solana Validator.
+Apr 07 08:36:30 ip-10-0-1-84 solana-validator[111231]: log file: /var/log/solana/validator.log
+Apr 07 12:31:04 ip-10-0-1-84 systemd[1]: solana-validator.service: Main process exited, code=killed, status=9/KILL
+Apr 07 12:31:04 ip-10-0-1-84 systemd[1]: solana-validator.service: Failed with result 'signal'.
+Apr 07 12:31:04 ip-10-0-1-84 systemd[1]: solana-validator.service: Consumed 4h 32min 10.631s CPU time.
+Apr 07 12:31:14 ip-10-0-1-84 systemd[1]: solana-validator.service: Scheduled restart job, restart counter is at 1.
+Apr 07 12:31:14 ip-10-0-1-84 systemd[1]: Stopped Solana Validator.
+Apr 07 12:31:14 ip-10-0-1-84 systemd[1]: solana-validator.service: Consumed 4h 32min 10.631s CPU time.
+Apr 07 12:31:14 ip-10-0-1-84 systemd[1]: Started Solana Validator.
+Apr 07 12:31:14 ip-10-0-1-84 solana-validator[117298]: log file: /var/log/solana/validator.log

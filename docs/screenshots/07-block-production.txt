@@ -1,0 +1,22 @@
+{
+    "jsonrpc": "2.0",
+    "result": {
+        "context": {
+            "apiVersion": "1.18.15",
+            "slot": 38937
+        },
+        "value": {
+            "byIdentity": {
+                "GHtFnkSeRtrMhbJkWuC3g9dRuS9FMhJynkD5zKWTHpNd": [
+                    58,
+                    58
+                ]
+            },
+            "range": {
+                "firstSlot": 38880,
+                "lastSlot": 38937
+            }
+        }
+    },
+    "id": 1
+}

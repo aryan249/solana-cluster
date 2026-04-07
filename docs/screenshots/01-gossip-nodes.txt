@@ -1,0 +1,10 @@
+IP Address      | Identity                                     | Gossip | TPU   | RPC Address           | Version | Feature Set
+----------------+----------------------------------------------+--------+-------+-----------------------+---------+----------------
+10.0.1.98       | GHtFnkSeRtrMhbJkWuC3g9dRuS9FMhJynkD5zKWTHpNd | 8001   | 8003  | 10.0.1.98:8899        | 1.18.15 | 4215500110
+10.0.1.243      | 4j6Wf3EYHEe3igoxEu79sAUzMGbbxfyTsky6KAjRDXXH | 8001   | 8003  | 10.0.1.243:8899       | 1.18.15 | 4215500110
+10.0.1.84       | QxgRzZZabB9F8gCgv2oe8qSSj7VGTknhg6BRUGmduFA  | 8001   | 8003  | 10.0.1.84:8899        | 1.18.15 | 4215500110
+10.0.1.139      | 2VwLNVLqv6Az3oFSJWXteq8TtniMsayqEP8aKboP2DAi | 8001   | 8003  | 10.0.1.139:8899       | 1.18.15 | 4215500110
+10.0.1.40       | CBLWTZTGGyLfsoH72aRz28zUp69uviwXT4sSjtSjPcNZ | 8001   | 8003  | 10.0.1.40:8899        | 1.18.15 | 4215500110
+10.0.1.64       | 7fpAFbv1jzV6v3Y9sSBsn5uG5ht8eAKVm5N6zvLCQd1g | 8001   | 8003  | 10.0.1.64:8899        | 1.18.15 | 4215500110
+Nodes: 6
+

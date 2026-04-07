@@ -1,0 +1,6 @@
+bootstrap (15.207.161.179): solana-cli 1.18.15 (src:767d24e5; feat:4215500110, client:SolanaLabs)
+validator-1 (15.206.98.226): solana-cli 1.18.15 (src:767d24e5; feat:4215500110, client:SolanaLabs)
+validator-2 (3.109.96.22): solana-cli 1.18.15 (src:767d24e5; feat:4215500110, client:SolanaLabs)
+validator-3 (13.200.69.160): solana-cli 1.18.15 (src:767d24e5; feat:4215500110, client:SolanaLabs)
+validator-4 (43.204.41.197): solana-cli 1.18.15 (src:767d24e5; feat:4215500110, client:SolanaLabs)
+rpc (13.202.48.136): solana-cli 1.18.15 (src:767d24e5; feat:4215500110, client:SolanaLabs)

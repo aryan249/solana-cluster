@@ -1,0 +1,11 @@
+   Identity                                      Vote Account                            Commission  Last Vote        Root Slot     Skip Rate  Credits  Version            Active Stake
+  GHtFnkSeRtrMhbJkWuC3g9dRuS9FMhJynkD5zKWTHpNd  9BeJnQzFce4bcbtXHd5ZqwaNFoSt3xuwEDGoWwaMActx  100%      38931 (  0)      38900 (  0)   0.00%      848  1.18.15         0.497717120 SOL (100.00%)
+
+Average Stake-Weighted Skip Rate: 0.00%
+Average Unweighted Skip Rate:     0.00%
+
+Active Stake: 0.49771712 SOL
+
+Stake By Version:
+1.18.15 -    1 current validators (100.00%)
+

@@ -103,7 +103,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "solana_vote_latency_ms",
+          "expr": "solana_last_vote",
           "legendFormat": "{{instance_name}}",
           "refId": "A"
         }
@@ -272,7 +272,7 @@
       "type": "gauge",
       "targets": [
         {
-          "expr": "(solana_epoch_slot / solana_epoch_total_slots) * 100",
+          "expr": "(solana_epoch_number / solana_epoch_slots_in_epoch) * 100",
           "legendFormat": "{{instance_name}}",
           "refId": "A"
         }
@@ -317,7 +317,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "solana_vote_latency_ms",
+          "expr": "solana_last_vote",
           "legendFormat": "{{instance_name}}",
           "refId": "A"
         }
@@ -361,7 +361,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "solana_validator_active",
+          "expr": "solana_health",
           "legendFormat": "{{instance_name}}",
           "refId": "A"
         }
@@ -445,7 +445,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "solana_cpu_usage_percent",
+          "expr": "solana_cpu_usage",
           "legendFormat": "{{instance_name}}",
           "refId": "A"
         }
@@ -483,7 +483,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "solana_memory_used_bytes",
+          "expr": "solana_memory_usage",
           "legendFormat": "{{instance_name}}",
           "refId": "A"
         }
@@ -524,7 +524,7 @@
       "type": "gauge",
       "targets": [
         {
-          "expr": "solana_disk_usage_percent",
+          "expr": "solana_disk_usage",
           "legendFormat": "{{instance_name}}",
           "refId": "A"
         }

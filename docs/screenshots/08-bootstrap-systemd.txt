@@ -1,0 +1,12 @@
+● solana-bootstrap.service - Solana Bootstrap Validator
+     Loaded: loaded (/etc/systemd/system/solana-bootstrap.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2026-04-07 08:33:56 UTC; 4h 7min ago
+   Main PID: 122580 (solana-validato)
+      Tasks: 149 (limit: 4578)
+     Memory: 2.5G
+        CPU: 5h 16min 13.158s
+     CGroup: /system.slice/solana-bootstrap.service
+             └─122580 /usr/local/bin/solana-validator --identity /home/solana/keypairs/identity.json --vote-account /home/solana/keypairs/vote-account.json --ledger /ledger --rpc-port 8899 --gossip-port 8001 --dynamic-port-range 8000-8020 --limit-ledger-size 50000000 --log /var/log/solana/validator.log --gossip-host 10.0.1.98 --no-port-check --allow-private-addr --no-wait-for-vote-to-start-leader --enable-rpc-transaction-history --full-rpc-api --full-snapshot-interval-slots 200 --maximum-full-snapshots-to-retain 3 --rpc-bind-address 0.0.0.0
+
+Apr 07 08:33:56 ip-10-0-1-98 systemd[1]: Started Solana Bootstrap Validator.
+Apr 07 08:33:56 ip-10-0-1-98 solana-validator[122580]: log file: /var/log/solana/validator.log

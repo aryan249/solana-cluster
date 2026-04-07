@@ -1,0 +1,72 @@
+{
+    "jsonrpc": "2.0",
+    "result": [
+        {
+            "featureSet": 4215500110,
+            "gossip": "10.0.1.98:8001",
+            "pubkey": "GHtFnkSeRtrMhbJkWuC3g9dRuS9FMhJynkD5zKWTHpNd",
+            "pubsub": "10.0.1.98:8900",
+            "rpc": "10.0.1.98:8899",
+            "shredVersion": 19186,
+            "tpu": "10.0.1.98:8003",
+            "tpuQuic": "10.0.1.98:8009",
+            "version": "1.18.15"
+        },
+        {
+            "featureSet": 4215500110,
+            "gossip": "10.0.1.243:8001",
+            "pubkey": "4j6Wf3EYHEe3igoxEu79sAUzMGbbxfyTsky6KAjRDXXH",
+            "pubsub": "10.0.1.243:8900",
+            "rpc": "10.0.1.243:8899",
+            "shredVersion": 19186,
+            "tpu": "10.0.1.243:8003",
+            "tpuQuic": "10.0.1.243:8009",
+            "version": "1.18.15"
+        },
+        {
+            "featureSet": 4215500110,
+            "gossip": "10.0.1.84:8001",
+            "pubkey": "QxgRzZZabB9F8gCgv2oe8qSSj7VGTknhg6BRUGmduFA",
+            "pubsub": "10.0.1.84:8900",
+            "rpc": "10.0.1.84:8899",
+            "shredVersion": 19186,
+            "tpu": "10.0.1.84:8003",
+            "tpuQuic": "10.0.1.84:8009",
+            "version": "1.18.15"
+        },
+        {
+            "featureSet": 4215500110,
+            "gossip": "10.0.1.139:8001",
+            "pubkey": "2VwLNVLqv6Az3oFSJWXteq8TtniMsayqEP8aKboP2DAi",
+            "pubsub": "10.0.1.139:8900",
+            "rpc": "10.0.1.139:8899",
+            "shredVersion": 19186,
+            "tpu": "10.0.1.139:8003",
+            "tpuQuic": "10.0.1.139:8009",
+            "version": "1.18.15"
+        },
+        {
+            "featureSet": 4215500110,
+            "gossip": "10.0.1.40:8001",
+            "pubkey": "CBLWTZTGGyLfsoH72aRz28zUp69uviwXT4sSjtSjPcNZ",
+            "pubsub": "10.0.1.40:8900",
+            "rpc": "10.0.1.40:8899",
+            "shredVersion": 19186,
+            "tpu": "10.0.1.40:8003",
+            "tpuQuic": "10.0.1.40:8009",
+            "version": "1.18.15"
+        },
+        {
+            "featureSet": 4215500110,
+            "gossip": "10.0.1.64:8001",
+            "pubkey": "7fpAFbv1jzV6v3Y9sSBsn5uG5ht8eAKVm5N6zvLCQd1g",
+            "pubsub": "10.0.1.64:8900",
+            "rpc": "10.0.1.64:8899",
+            "shredVersion": 19186,
+            "tpu": "10.0.1.64:8003",
+            "tpuQuic": "10.0.1.64:8009",
+            "version": "1.18.15"
+        }
+    ],
+    "id": 1
+}

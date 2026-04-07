@@ -1,0 +1,45 @@
+{
+    "jsonrpc": "2.0",
+    "result": {
+        "current": [
+            {
+                "activatedStake": 497717120,
+                "commission": 100,
+                "epochCredits": [
+                    [
+                        86,
+                        600816,
+                        593904
+                    ],
+                    [
+                        87,
+                        607728,
+                        600816
+                    ],
+                    [
+                        88,
+                        614640,
+                        607728
+                    ],
+                    [
+                        89,
+                        621552,
+                        614640
+                    ],
+                    [
+                        90,
+                        622448,
+                        621552
+                    ]
+                ],
+                "epochVoteAccount": true,
+                "lastVote": 38934,
+                "nodePubkey": "GHtFnkSeRtrMhbJkWuC3g9dRuS9FMhJynkD5zKWTHpNd",
+                "rootSlot": 38903,
+                "votePubkey": "9BeJnQzFce4bcbtXHd5ZqwaNFoSt3xuwEDGoWwaMActx"
+            }
+        ],
+        "delinquent": []
+    },
+    "id": 1
+}
