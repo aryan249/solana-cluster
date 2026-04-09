@@ -81,6 +81,30 @@
     path: "{{ ledger_path }}/genesis.bin"
   register: genesis_bin
 
+- name: Extract SPL programs from test-validator
+  shell: |
+    rm -rf /tmp/test-genesis
+    /opt/solana-release/bin/solana-test-validator \
+      --ledger /tmp/test-genesis \
+      --rpc-port 18899 --faucet-port 19900 \
+      --gossip-port 18001 --dynamic-port-range 18000-18020 \
+      --quiet &
+    TV_PID=$!
+    sleep 12
+    mkdir -p /opt/spl-programs
+    /opt/solana-release/bin/solana program dump \
+      TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA \
+      /opt/spl-programs/spl_token.so --url http://127.0.0.1:18899
+    /opt/solana-release/bin/solana program dump \
+      ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL \
+      /opt/spl-programs/spl_ata.so --url http://127.0.0.1:18899
+    kill $TV_PID 2>/dev/null; wait $TV_PID 2>/dev/null
+    rm -rf /tmp/test-genesis
+  args:
+    creates: /opt/spl-programs/spl_token.so
+  become: true
+  when: not genesis_bin.stat.exists
+
 - name: Run solana-genesis
   shell: >
     /usr/local/bin/solana-genesis
@@ -97,6 +121,8 @@
     --target-tick-duration {{ target_tick_duration }}
     --hashes-per-tick auto
     --max-genesis-archive-unpacked-size 1073741824
+    --bpf-program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA BPFLoader2111111111111111111111111111111111 /opt/spl-programs/spl_token.so
+    --bpf-program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL BPFLoader2111111111111111111111111111111111 /opt/spl-programs/spl_ata.so
   become: true
   become_user: solana
   when: not genesis_bin.stat.exists
