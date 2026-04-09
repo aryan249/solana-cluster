@@ -1,6 +1,6 @@
 [package]
 name = "counter"
-version = "0.2.0"
+version = "0.1.0"
 edition = "2021"
 
 [lib]
@@ -10,6 +10,3 @@ crate-type = ["cdylib", "lib"]
 solana-program = "1.18"
 borsh = "0.10"
 borsh-derive = "0.10"
-
-[features]
-no-entrypoint = []
