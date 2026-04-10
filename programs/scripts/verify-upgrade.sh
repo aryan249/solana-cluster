@@ -15,8 +15,8 @@ PROGRAM_ID="${2:-}"
 PASS=0
 FAIL=0
 
-log_pass() { echo "  [PASS] $1"; ((PASS++)); }
-log_fail() { echo "  [FAIL] $1"; ((FAIL++)); }
+log_pass() { echo "  [PASS] $1"; PASS=$((PASS + 1)); }
+log_fail() { echo "  [FAIL] $1"; FAIL=$((FAIL + 1)); }
 
 echo "=== Program Upgrade Verification ==="
 echo "RPC URL   : $RPC_URL"
