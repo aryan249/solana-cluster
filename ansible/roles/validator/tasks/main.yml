@@ -27,6 +27,18 @@
   become: true
   become_user: solana
 
+- name: Check if vote account already exists on-chain
+  shell: |
+    /usr/local/bin/solana vote-account \
+      {{ keypair_path }}/validator-{{ inventory_hostname }}-vote-account.json \
+      --url http://127.0.0.1:{{ rpc_port }} 2>&1
+  delegate_to: "{{ groups['bootstrap'][0] }}"
+  become: true
+  become_user: solana
+  register: vote_account_check
+  changed_when: false
+  failed_when: false
+
 - name: Create vote account on bootstrap for this validator
   shell: |
     /usr/local/bin/solana create-vote-account \
@@ -35,11 +47,11 @@
       {{ bootstrap_pubkey_for_vote.stdout }} \
       --commission 10 \
       --keypair {{ keypair_path }}/identity.json \
-      --url http://127.0.0.1:{{ rpc_port }} || true
+      --url http://127.0.0.1:{{ rpc_port }}
   delegate_to: "{{ groups['bootstrap'][0] }}"
   become: true
   become_user: solana
-  changed_when: false
+  when: vote_account_check.rc != 0
 
 - name: Copy keypairs to staging on bootstrap
   copy:
@@ -119,16 +131,14 @@
     owner: root
     group: root
     mode: "0644"
-
-- name: Reload systemd daemon
-  systemd:
-    daemon_reload: yes
+  notify: Restart solana-validator
 
 - name: Enable and start solana-validator
   systemd:
     name: solana-validator
     enabled: yes
     state: started
+    daemon_reload: yes
 
 - name: Wait for validator to catch up
   shell: >

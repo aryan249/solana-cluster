@@ -50,15 +50,12 @@
     mode: "0644"
   notify: Restart solana-rpc
 
-- name: Reload systemd daemon
-  systemd:
-    daemon_reload: yes
-
 - name: Enable and start solana-rpc
   systemd:
     name: solana-rpc
     enabled: yes
     state: started
+    daemon_reload: yes
 
 - name: Wait for RPC process to be running
   shell: systemctl is-active solana-rpc

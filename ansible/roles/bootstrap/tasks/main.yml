@@ -134,16 +134,14 @@
     owner: root
     group: root
     mode: "0644"
-
-- name: Reload systemd daemon for bootstrap
-  systemd:
-    daemon_reload: yes
+  notify: Restart bootstrap validator
 
 - name: Enable and start bootstrap validator
   systemd:
     name: solana-bootstrap
     enabled: yes
     state: started
+    daemon_reload: yes
 
 - name: Wait for bootstrap validator RPC to be ready
   shell: /usr/local/bin/solana cluster-version --url http://127.0.0.1:{{ rpc_port }}
@@ -202,6 +200,18 @@
   become_user: solana
   changed_when: false
 
+- name: Check which vote accounts already exist
+  shell: |
+    /usr/local/bin/solana vote-account \
+      {{ keypair_path }}/validator-{{ item }}-vote-account.json \
+      --url http://127.0.0.1:{{ rpc_port }} 2>&1
+  become: true
+  become_user: solana
+  loop: "{{ groups['validators'] }}"
+  register: vote_account_checks
+  changed_when: false
+  failed_when: false
+
 - name: Create vote accounts for each validator
   shell: |
     VOTE_PUBKEY=$(/usr/local/bin/solana-keygen pubkey {{ keypair_path }}/validator-{{ item }}-vote-account.json)
@@ -212,11 +222,25 @@
       $IDENTITY_PUBKEY \
       --commission 10 \
       --keypair {{ keypair_path }}/identity.json \
-      --url http://127.0.0.1:{{ rpc_port }} || true
+      --url http://127.0.0.1:{{ rpc_port }}
   become: true
   become_user: solana
   loop: "{{ groups['validators'] }}"
+  loop_control:
+    index_var: idx
+  when: vote_account_checks.results[idx].rc != 0
+
+- name: Check which stake accounts are already delegated
+  shell: |
+    /usr/local/bin/solana stake-account \
+      {{ keypair_path }}/validator-{{ item }}-stake-account.json \
+      --url http://127.0.0.1:{{ rpc_port }} 2>&1
+  become: true
+  become_user: solana
+  loop: "{{ groups['validators'] }}"
+  register: stake_account_checks
   changed_when: false
+  failed_when: false
 
 - name: Delegate stake for each validator
   shell: |
@@ -225,11 +249,13 @@
       {{ keypair_path }}/validator-{{ item }}-vote-account.json \
       --keypair {{ keypair_path }}/identity.json \
       --url http://127.0.0.1:{{ rpc_port }} \
-      --force || true
+      --force
   become: true
   become_user: solana
   loop: "{{ groups['validators'] }}"
-  changed_when: false
+  loop_control:
+    index_var: idx
+  when: stake_account_checks.results[idx].rc != 0
 
 - name: Create staging directory for keypair distribution
   file:
